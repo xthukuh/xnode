@@ -1,0 +1,6 @@
+lib/
+jest.config.ts
+LICENSE
+README.md
+tsconfig.json
+tsconfig.prod.json
