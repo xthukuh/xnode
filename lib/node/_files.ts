@@ -1,7 +1,7 @@
 import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
-import { _jsonParse } from 'xutils';
+import { Term, _jsonParse } from 'xutils';
 
 /**
  * Get existing path type
@@ -69,17 +69,24 @@ export const _readLines = async (file: string, handler: (lineContent: string, li
  * Read file contents
  * 
  * @param path  File path
- * @param json  JSON decode
+ * @param parse  Parse content to string or JSON decode (default Buffer)
  * @param _default  Default result on parse failure [default: `undefined`]
  * @returns `T|undefined` Parsed data or `undefined` on failure
  */
-export const _readSync = <T extends any>(path: string, json: boolean = false, _default: T|undefined = undefined): T|undefined => {
+export const _readSync = <T extends any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined): T|undefined => {
 	try {
-		if (_pathExists(path) !== 1) throw new Error('Read file path is invalid.');
-		const contents: string = Fs.readFileSync(path).toString();
-		return json ? _jsonParse(contents, _default) : contents;
+		if (_pathExists(path) !== 1) throw new Error(`Invalid read file path. (${path})`);
+		const buffer: any = Fs.readFileSync(path);
+		if (!parse) return buffer;
+		const content: any = buffer.toString();
+		if (parse !== 'json') return content;
+		const fail = `__fail_${Date.now()}__`;
+		const json = _jsonParse(content, fail);
+		if (json === fail) throw new Error(`JSON parse read file content failed. (${path})`);
+		return json;
 	}
 	catch (e){
+		if (_default === undefined) Term.warn(e);
 		return _default;
 	}
 };
@@ -104,7 +111,14 @@ export const _writeSync = (path: string, content: string|NodeJS.ArrayBufferView,
 };
 
 /**
- * Parse `process.argv` options
+ * Get process working directory (`process.cwd()`)
+ * 
+ * @returns `string`
+ */
+export const _processCwd = (): string => process.cwd();
+
+/**
+ * Get parsed process arguments (`process.argv`) as options
  * 
  * @returns `{[key: string]: string|boolean}`
  */
