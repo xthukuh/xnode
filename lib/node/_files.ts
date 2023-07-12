@@ -73,7 +73,7 @@ export const _readLines = async (file: string, handler: (lineContent: string, li
  * @param _default  Default result on parse failure [default: `undefined`]
  * @returns `T|undefined` Parsed data or `undefined` on failure
  */
-export const _readSync = <T extends any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined): T|undefined => {
+export const _readSync = <T extends any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined): T => {
 	try {
 		if (_pathExists(path) !== 1) throw new Error(`Invalid read file path. (${path})`);
 		const buffer: any = Fs.readFileSync(path);
@@ -87,7 +87,7 @@ export const _readSync = <T extends any>(path: string, parse: boolean|'json' = f
 	}
 	catch (e){
 		if (_default === undefined) Term.warn(e);
-		return _default;
+		return _default as T;
 	}
 };
 
