@@ -1,5 +1,5 @@
 import { Term } from 'xutils';
-import { _watcher } from '../lib';
+import { _watcher } from '../lib/watcher';
 
 (async()=>{
 

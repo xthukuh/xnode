@@ -26,11 +26,11 @@ export declare const _readLines: (file: string, handler: (lineContent: string, l
  * Read file contents
  *
  * @param path  File path
- * @param json  JSON decode
+ * @param parse  Parse content to string or JSON decode (default Buffer)
  * @param _default  Default result on parse failure [default: `undefined`]
  * @returns `T|undefined` Parsed data or `undefined` on failure
  */
-export declare const _readSync: <T extends unknown>(path: string, json?: boolean, _default?: T | undefined) => T | undefined;
+export declare const _readSync: <T extends unknown>(path: string, parse?: boolean | 'json', _default?: T | undefined) => T;
 /**
  * Write file contents
  *
@@ -42,7 +42,13 @@ export declare const _readSync: <T extends unknown>(path: string, json?: boolean
  */
 export declare const _writeSync: (path: string, content: string | NodeJS.ArrayBufferView, append?: boolean, abortController?: AbortController | undefined) => void;
 /**
- * Parse `process.argv` options
+ * Get process working directory (`process.cwd()`)
+ *
+ * @returns `string`
+ */
+export declare const _processCwd: () => string;
+/**
+ * Get parsed process arguments (`process.argv`) as options
  *
  * @returns `{[key: string]: string|boolean}`
  */

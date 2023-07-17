@@ -2,7 +2,7 @@
 	"name": "xnode",
 	"version": "1.0.0",
 	"description": "Assorted node utilities.",
-	"main": "dist/index.js",
+	"main": "dist/xnode.min.js",
 	"types": "dist/index.d.ts",
 	"x-scripts": {
 		"prepublish": "npm run build",
