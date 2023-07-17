@@ -8,7 +8,7 @@ module.exports = env => {
 	const filename = `${library}.min.js`;
 	return {
 		mode,
-		// devtool: 'inline-source-map',
+		devtool: 'inline-source-map',
 		entry: {
 			main: './lib/index.ts',
 		},
@@ -17,7 +17,7 @@ module.exports = env => {
 			filename,
 			libraryTarget: 'umd',
 			library,
-			// umdNamedDefine: true,
+			umdNamedDefine: true,
 			globalObject: 'this',
 		},
 		resolve: {
