@@ -1,7 +1,7 @@
 import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
-import { Term, _jsonParse } from 'xutils';
+import { Term, _jsonParse } from '../xutils';
 
 /**
  * Get existing path type

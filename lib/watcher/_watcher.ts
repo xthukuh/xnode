@@ -1,4 +1,4 @@
-import { Term, _asyncValues, _int, _str } from 'xutils';
+import { Term, _asyncValues, _int, _str } from '../xutils';
 import { _lsDir, _pathExists, _processArgs, _processCwd, _readSync } from '../node';
 import { parse as gitignoreParse } from 'parse-gitignore';
 // const { glob, sync, hasMagic } = require('glob-gitignore');
