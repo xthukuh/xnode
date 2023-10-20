@@ -1,8 +1,8 @@
 {
 	"extends": "./tsconfig",
 	"include": [
-    "lib/**/*"
-  ],
+		"src/**/*"
+	],
 	"exclude": [
 		"jest.config.ts",
 		"**/*.test.ts",
