@@ -1,36 +1,132 @@
 import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
-import { Term, _jsonParse } from '../xutils';
+import * as Crypto from 'crypto';
+import { Term, _errorText, _jsonParse } from '../xutils';
+
 
 /**
- * Get existing path type
+ * Check if path exists
  * 
- * @param path
- * @returns `0|1|2` ~> `0` = not found | `1` = file | `2` = directory | `3` = symlink directory
+ * @param path - file path
+ * @returns `string` real path | `''` on failure
  */
-export const _pathExists = (path: string): 0|1|2|3 => {
+export const _exists = (path: string): boolean => {
 	try {
-		const stats = Fs.statSync(path);
-		if (stats.isFile()) return 1;
-		if (stats.isDirectory()) return stats.isSymbolicLink() ? 3 : 2;
+		return !!Fs.existsSync(path);
 	}
 	catch (e){
-		if (`${e}`.indexOf('no such file or directory') < 0) console.warn('[E] _pathExists', e);
+		if (`${e}`.indexOf('no such file or directory') < 0) console.warn('[E] _realpath', e);
+		return false;
 	}
-	return 0;
 };
 
 /**
- * Get directory listing
+ * Get path realpath
  * 
- * @param dir  Directory path
- * @param mode  List mode (i.e. `0` = all | `1` = only files | `2` = only subfolders)
- * @param recursive  List recursively `boolean`
- * @returns `string[]` Paths array
+ * @param path - file path
+ * @returns `string` result | `''` on error
+ */
+export const _realpath = (path: string): string => {
+	try {
+		if (!_exists(path)) return '';
+		const res: string = Fs.realpathSync(path);
+		return res;
+	}
+	catch (e){
+		console.warn('[E] _realpath', e);
+		return '';
+	}
+};
+
+/**
+ * Get path basename
+ * 
+ * @param path - file path
+ * @param suffix - optionally, an extension to remove from the result.
+ * @returns `string` result | `''` on error
+ */
+export const _pathBasename = (path: string, suffix?: string): string => {
+	try {
+		return Path.basename(path, suffix);
+	}
+	catch (e){
+		console.warn('[E] _pathBasename', e);
+		return '';
+	}
+};
+
+/**
+ * Get path dirname
+ * 
+ * @param path - file path
+ * @returns `string` result | `''` on error
+ */
+export const _pathDirname = (path: string): string => {
+	try {
+		return Path.dirname(path);
+	}
+	catch (e){
+		console.warn('[E] _pathDirname', e);
+		return '';
+	}
+};
+
+/**
+ * Create directory if not exist
+ * 
+ * @param path - directory path 
+ * @param mode - (default: `0o777`) create permission
+ * @param recursive - (default: `true`) create recursively ~ create parent folders if they dont exist
+ * @returns `string` created directory realpath | `''` on error
+ */
+export const _mkdir = (path: string, mode: string|number = 0o777, recursive: boolean = true): string => {
+	let real_path: string = _realpath(path);
+	if (real_path){
+		const type = _filetype(path);
+		if (type !== 2) throw new Error(`Create directory failed! The path already exists. (${real_path} => ${type})`);
+		return real_path;
+	}
+	try {
+		Fs.mkdirSync(path, {mode, recursive});
+		if (!((real_path = _realpath(path)) && _filetype(real_path) === 2)) throw new TypeError(`Failed to resolve created directory real path (${path}).`);
+		return real_path;
+	}
+	catch (e){
+		throw new Error(`Create directory failed! ${e}`);
+	}
+};
+
+/**
+ * Get existing file type
+ * 
+ * @param path - file path
+ * @returns `0|1|2` ~> `0` = not found | `1` = file | `2` = directory | `3` = symlink directory
+ */
+export const _filetype = (path: string): 0|1|2|3 => {
+	try {
+		if (!_exists(path)) return 0;
+		const stats = Fs.statSync(path);
+		if (stats.isFile()) return 1;
+		if (stats.isDirectory()) return stats.isSymbolicLink() ? 3 : 2;
+		return 0;
+	}
+	catch (e){
+		if (`${e}`.indexOf('no such file or directory') < 0) console.warn('[E] _filetype', e);
+		return 0;
+	}
+};
+
+/**
+ * Get directory content paths
+ * 
+ * @param dir - root directory path
+ * @param mode - parse mode (i.e. `0` = all | `1` = only files | `2` = only subfolders)
+ * @param recursive - whether to parse subbolders recursively
+ * @returns `string[]` root directory content paths
  */
 export const _lsDir = async (dir: string, mode: number = 0, recursive: boolean = false): Promise<string[]> => {
-	if (_pathExists(dir) < 2) throw new Error(`List directory path not found: "${dir.replace(/\\/g, '/')}".`);
+	if (_filetype(dir) < 2) throw new Error(`List directory path not found: "${dir.replace(/\\/g, '/')}".`);
 	if (![0, 1, 2].includes(mode)) mode = 0;
 	recursive = !!recursive;
 	const items = await Fs.promises.readdir(dir, {withFileTypes: true});
@@ -55,7 +151,7 @@ export const _lsDir = async (dir: string, mode: number = 0, recursive: boolean =
  * @returns `number` Total lines read
  */
 export const _readLines = async (file: string, handler: (lineContent: string, lineNumber?: number)=>any): Promise<number> => {
-	if (_pathExists(file) !== 1) throw new Error(`Read lines file path not found: "${file.replace(/\\/g, '/')}".`);
+	if (_filetype(file) !== 1) throw new Error(`Read lines file path not found: "${file.replace(/\\/g, '/')}".`);
 	const fileStream = Fs.createReadStream(file);
 	const rl = Readline.createInterface({input: fileStream, crlfDelay: Infinity});
 	let n: number = 0;
@@ -77,7 +173,7 @@ export const _readLines = async (file: string, handler: (lineContent: string, li
  */
 export const _readSync = <T extends any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined): T => {
 	try {
-		if (_pathExists(path) !== 1) throw new Error(`Invalid read file path. (${path})`);
+		if (_filetype(path) !== 1) throw new Error(`Invalid read file path. (${path})`);
 		const buffer: any = Fs.readFileSync(path);
 		if (!parse) return buffer;
 		const content: any = buffer.toString();
@@ -165,7 +261,7 @@ export const _processArgs = (): {[key: string]: string|boolean} => {
 export const _removeDir = (path: string, recursive: boolean = false): number => {
 	try {
 		let force: boolean = true;
-		const type = _pathExists(path = path.trim());
+		const type = _filetype(path = path.trim());
 		if (type < 2) return -1;
 		if (type === 3){
 			recursive = false;
@@ -188,7 +284,7 @@ export const _removeDir = (path: string, recursive: boolean = false): number => 
  */
 export const _removeFile = (path: string): number => {
 	try {
-		if (_pathExists(path = path.trim()) !== 1) return -1;
+		if (_filetype(path = path.trim()) !== 1) return -1;
 		Fs.unlinkSync(path);
 		return 1;
 	}
@@ -206,7 +302,7 @@ export const _removeFile = (path: string): number => {
  */
 export const _linkTarget = (path: string): string => {
 	try {
-		if (_pathExists(path) !== 3) return '';
+		if (_filetype(path) !== 3) return '';
 		const target: string = Fs.readlinkSync(path);
 		if (!('string' === typeof target && target.trim())) throw new TypeError('Empty read link result.');
 		return target;
@@ -215,4 +311,40 @@ export const _linkTarget = (path: string): string => {
 		console.warn(`Read link "${path}" failure; ${e}`);
 		return '';
 	}
+};
+
+/**
+ * Get hash algorithms
+ * 
+ * @returns `string[]` ~ `RSA-MD5`, `RSA-RIPEMD160`, `RSA-SHA1`, `RSA-SHA1-2`, `RSA-SHA224`, `RSA-SHA256`, `RSA-SHA3-224`, `RSA-SHA3-256`, `RSA-SHA3-384`, `RSA-SHA3-512`, `RSA-SHA384`, `RSA-SHA512`, `RSA-SHA512/224`, `RSA-SHA512/256`, `RSA-SM3`, `blake2b512`, `blake2s256`, `id-rsassa-pkcs1-v1_5-with-sha3-224`, `id-rsassa-pkcs1-v1_5-with-sha3-256`, `id-rsassa-pkcs1-v1_5-with-sha3-384`, `id-rsassa-pkcs1-v1_5-with-sha3-512`, `md5`, `md5-sha1`, `md5WithRSAEncryption`, `ripemd`, `ripemd160`, `ripemd160WithRSA`, `rmd160`, `sha1`, `sha1WithRSAEncryption`, `sha224`, `sha224WithRSAEncryption`, `sha256`, `sha256WithRSAEncryption`, `sha3-224`, `sha3-256`, `sha3-384`, `sha3-512`, `sha384`, `sha384WithRSAEncryption`, `sha512`, `sha512-224`, `sha512-224WithRSAEncryption`, `sha512-256`, `sha512-256WithRSAEncryption`, `sha512WithRSAEncryption`, `shake128`, `shake256`, `sm3`, `sm3WithRSAEncryption`, `ssl3-md5`, `ssl3-sha1`
+ */
+export const _hashes = (): string[] => Crypto.getHashes();
+
+
+/**
+ * Get file checksum hash
+ * 
+ * @param path - file path
+ * @param algo - hash algorithm (default: `'sha256'`) ~ see `_hashes()`
+ * @returns `Promise<string>` ~ hash result | `''` on error
+ */
+export const _hashFile = async (path: string, algo: string = 'sha256'): Promise<string> => {
+	if (!_exists(path)) return '';
+	const file = _realpath(path);
+	const file_type = _filetype(file);
+	if (!(file && file_type === 1)) throw new TypeError(`Hash file path is invalid. (${path})`);
+  const hash = Crypto.createHash(algo);
+  const stream = Fs.createReadStream(path);
+  const complete: boolean = await (new Promise((resolve, reject) => {
+    stream.on('data', (data) => hash.update(data));
+    stream.on('close', resolve);
+    stream.on('error', reject);
+  }))
+	.then(() => true)
+	.catch((err: any) => {
+		console.warn(`Hash file failure; ${_errorText(err)}`);
+		return false;
+	});
+	if (!complete) return '';
+	return hash.digest('hex');
 };

@@ -1,15 +1,12 @@
 # xparse-ignore
 
-Parse directory obeying gitignore rules (with extras).
+Parse directory obeying gitignore rules with custom options.
+
+#
+
+_For usage help docs run:_
 
 ```bash
-$ npm run dev -- "/example/dir/path" #paths not ignored 
-$ npm run dev -- "/example/dir/path" --ignored #ignored paths
-```
-
-Running compiled js 
-
-```bash
-$ node ./dist/index.js "/example/dir/path" #paths not ignored 
-$ node ./dist/index.js "/example/dir/path" --ignored #ignored paths
+$ npm run dev -- --help
+$ node ./dist/index.js -- --help
 ```

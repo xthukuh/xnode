@@ -232,7 +232,7 @@ export const _filepath = (value: any, separator?: ''|'/'|'\\', _strict: boolean 
 		for (let i = 0; i < items.length; i ++){
 			let [part, div] = items[i];
 			part = _str(part, true);
-			if (!(i && !part)) continue; //skip blank ('') entries
+			if (i && !part) continue; //skip blank ('') entries
 			trimmed_parts.push([part, div]);
 		}
 

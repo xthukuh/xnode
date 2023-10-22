@@ -1,4 +1,7 @@
-import { _str } from './_string';
+import { _clone } from './_clone';
+import { _posInt } from './_number';
+import { _values } from './_objects';
+import { _errorText, _str } from './_string';
 
 /**
  * Promise result interface
@@ -11,33 +14,169 @@ export interface IPromiseResult<TResult> {
 }
 
 /**
- * Parallel resolve `array` values callback promises
+ * Parallel resolve list items `<T=any>[]`
  * - i.e. await _asyncAll<number, number>([1, 2], async (num) => num * 2) --> [{status: 'resolved', index: 0, value: 2}, {status: 'resolved', index: 1, value: 4}]
  * 
- * @param array  Entries
- * @param callback  Entry callback
+ * @param values - queue values
+ * @param callback - queue resolve value callback ~ `(value:T,index:number,length:number)=>Promise<TResult=any>`
+ * @param onProgress - queue on progress callback ~ `(percent:number,total:number,complete:number,failures:number)=>void`
  * @returns `Promise<IPromiseResult<TResult>[]>`
  */
-export const _asyncAll = async<T = any, TResult = any>(array: T[], callback?: (value:T,index:number,length:number)=>Promise<TResult>): Promise<IPromiseResult<TResult>[]> => {
+export const _asyncAll = async<T = any, TResult = any>(values: T[], callback?: (value:T,index:number,length:number)=>Promise<TResult>, onProgress?: (percent:number,total:number,complete:number,failures:number)=>void): Promise<IPromiseResult<TResult>[]> => {
 	return new Promise((resolve) => {
-		const _buffer: IPromiseResult<TResult>[] = [];
-		const _resolve = () => resolve(_buffer);
-		const length = array.length;
-		if (!length) return _resolve();
-		let done = 0;
-		const _handler: undefined|((value:T,index:number,length:number)=>Promise<TResult>) = 'function' === typeof callback ? callback : undefined;
-		for (let index = 0; index < length; index ++){
-			const value = array[index];
-			(async()=>_handler ? _handler(value, index, length) : value)()
+		
+		//-- queue arguments
+		const _callback: undefined|((value:T,index:number,length:number)=>Promise<TResult>) = 'function' === typeof callback ? callback : undefined;
+		const _onProgress: undefined|((percent:number,total:number,complete:number,failures:number)=>void) = 'function' === typeof onProgress ? onProgress : undefined;
+
+		//-- queue promise
+		let complete = 0, failures = 0;
+		interface IQueueItem {index: number; value: T;}
+		const queue: IQueueItem[] = _values(values).map((value, index) => ({index, value}));
+		const length = queue.length;
+		const results: IPromiseResult<TResult>[] = [];
+		const _resolve = (): void => void setTimeout(() => resolve(results), 0);
+
+		//-- queue size check
+		if (!length){
+			if (_onProgress) _onProgress(100, length, complete, failures);
+			return _resolve();
+		}
+		else if (_onProgress) _onProgress(0, length, complete, failures);
+
+		//fn => helper > pending promise complete
+		const _done = (failed: boolean = false): void => {
+			complete ++;
+			if (failed) failures ++;
+
+			//-- progress update (on different thread)
+			if (_onProgress){
+				const percent: number = Math.min(Math.floor(complete/length * 100), 100);
+				try {
+					_onProgress(percent, length, complete, failures);
+				}
+				catch (err: any){
+					console.warn(`[IGNORED] _asyncAll > onProgress callback exception; ${_errorText(err)}`);
+				}
+			}
+
+			//-- check finished
+			if (complete >= length) _resolve();
+		};
+
+		//-- queue all pending promises
+		queue.forEach((next: IQueueItem): void => {
+			(async()=>_callback ? _callback(next.value, next.index, length) : next.value)()
 			.then((value: any) => {
-				_buffer.push({status: 'resolved', index, value});
-				return value;
+				results[next.index] = {status: 'resolved', index: next.index, value};
+				return _done();
 			})
-			.catch((reason: any) => _buffer.push({status: 'rejected', index, reason}))
-			.finally(() => ++done >= length ? _resolve() : undefined);
+			.catch((reason: any) => {
+				results[next.index] = {status: 'rejected', index: next.index, reason};
+				return _done(true);
+			});
+		});
+	});
+};
+
+/**
+ * Parallel resolve list items `<T=any>[]` with max simultaneous promises size limit
+ * 
+ * @param values - queue values
+ * @param size - max simultaneous promises size (default: `0` ~ unlimited)
+ * @param callback - queue resolve value callback ~ `(value:T,index:number,length:number)=>Promise<TResult=any>`
+ * @param onProgress - queue on progress callback ~ `(percent:number,total:number,complete:number,failures:number)=>void`
+ * @returns `Promise<IPromiseResult<TResult>[]>`
+ */
+export const _asyncQueue = async <T = any, TResult = any>(values: T[], size: number = 0, callback?: (value:T,index:number,length:number)=>Promise<TResult>, onProgress?: (percent:number,total:number,complete:number,failures:number)=>void): Promise<IPromiseResult<TResult>[]> => {
+	return new Promise((resolve: (results:IPromiseResult<TResult>[])=>void): void => {
+		
+		//-- queue arguments
+		size = _posInt(size) ?? 0;
+		const _callback: undefined|((value:T,index:number,length:number)=>Promise<TResult>) = 'function' === typeof callback ? callback : undefined;
+		const _onProgress: undefined|((percent:number,total:number,complete:number,failures:number)=>void) = 'function' === typeof onProgress ? onProgress : undefined;
+		
+		//-- queue promise
+		interface IQueueItem {index: number; value: T;}
+		const queue: IQueueItem[] = _values(values).map((value, index) => ({index, value}));
+		const length = queue.length;
+		let pending = 0, complete = 0, failures = 0;
+
+		//-- queue results
+		const results: IPromiseResult<TResult>[] = [];
+		const _resolve = (): void => void setTimeout(() => resolve(results), 0);
+		
+		//-- queue size check
+		if (!length){
+			if (_onProgress) _onProgress(100, length, complete, failures);
+			return _resolve();
+		}
+		else if (_onProgress) _onProgress(0, length, complete, failures);
+
+		//fn => helper > queue next timeout multiple calls throttle (50ms)
+		let next_timeout: any = undefined;
+		const _queue_next = (): void => {
+			clearTimeout(next_timeout);
+			next_timeout = setTimeout(() => _next(), next_timeout ? 50 : 0);
+		};
+
+		//>> queue next start
+		_queue_next();
+
+		//fn => helper > queue next
+		function _next(): void {
+			
+			//-- pending limit > ignore ~ simultaneous size limit
+			if (size && (pending + 1) > size) return;
+			
+			//-- next queue item > ignore ~ empty queue
+			const next: IQueueItem|undefined = queue.shift();
+			if (!next) return;
+
+			//-- pending increment
+			pending ++;
+
+			//fn => helper > pending promise complete
+			const _done = (failed: boolean = false): void => {
+				
+				//-- decrement pending > increment complete/failures
+				pending --;
+				complete ++;
+				if (failed) failures ++;
+
+				//-- progress update (on different thread)
+				if (_onProgress){
+					const percent: number = Math.min(Math.floor(complete/length * 100), 100);
+					try {
+						_onProgress(percent, length, complete, failures);
+					}
+					catch (err: any){
+						console.warn(`[IGNORED] _asyncBatch > onProgress callback exception; ${_errorText(err)}`);
+					}
+				}
+				
+				//<< queue complete/next
+				if (complete >= length) return _resolve();
+				return _queue_next();
+			};
+
+			//-- pending promise
+			(async()=>_callback ? _callback(next.value, next.index, length) : next.value)()
+			.then((result: any): void => {
+				results[next.index] = {status: 'resolved', index: next.index, value: result};
+				_done();
+			})
+			.catch((reason: any): void => {
+				results[next.index] = {status: 'rejected', index: next.index, reason};
+				_done(true);
+			});
+
+			//<< queue next (add)
+			_queue_next();
 		}
 	});
 };
+
 
 /**
  * Get async iterable values (i.e. `for await (const value of _asyncValues(array)){...}`)
@@ -286,7 +425,6 @@ export const _pending = (key: string, promise: ()=>Promise<any>, mode: 0|1|2|3 =
 				resolved = 1;
 				resolve(value);
 			}
-			// else console.debug('--- pending resolve - ignored:', {key, value, resolved}); //TODO: remove debug log
 			pending.resolved = 1;
 			if (PENDING_CACHE[key] === pending && !pending.keep) delete PENDING_CACHE[key];
 		};
@@ -295,7 +433,6 @@ export const _pending = (key: string, promise: ()=>Promise<any>, mode: 0|1|2|3 =
 				resolved = -1;
 				reject(reason);
 			}
-			// else console.debug('--- pending reject - ignored:', {key, reason, resolved}); //TODO: remove debug log
 			if (abort) return;
 			pending.resolved = -1;
 			if (PENDING_CACHE[key] === pending) delete PENDING_CACHE[key];
