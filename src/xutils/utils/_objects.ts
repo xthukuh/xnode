@@ -486,6 +486,44 @@ export const _empty = (value: any, trim: boolean = false): boolean => {
 export const _iterable = (value: any, _async: boolean = false): boolean => 'function' === typeof value?.[_async ? Symbol.asyncIterator : Symbol.iterator];
 
 /**
+ * Validate `Object` value
+ * 
+ * @param value - parse value
+ * @param _filled - must not be empty `{}`
+ * @returns `boolean`
+ */
+export const _isObject = (value: any, _filled: boolean = false): boolean => !!value && 'object' === typeof value && Object.getPrototypeOf(value) === Object.prototype && (_filled ? !_empty(value) : true);
+
+/**
+ * Validate values iterable array list
+ * 
+ * @param value - parse value
+ * @param _mode - parse mode
+ * - `0` = (default) `[Symbol.iterator].name` is 'values'|'[Symbol.iterator]'
+ * - `1` = `Array.isArray`
+ * - `2` = is iterable `[Symbol.iterator]`
+ * @param _filled - must not be empty `[]`
+ * @returns `boolean`
+ */
+export const _isArray = (value: any, _filled: boolean = false, _mode: 0|1|2 = 0): boolean => {
+	_mode = [0, 1, 2].includes(_mode = parseInt(_mode as any) as any) ? _mode : 0;
+	if (!Array.isArray(value)){
+		if (_mode === 1) return false;
+		const it = value[Symbol.iterator];
+		if (Object(it) !== it) return false;
+		if (_mode !== 2 && !['values', '[Symbol.iterator]'].includes(it.name)) return false;
+	}
+	try {
+		const len = value.length ?? [...value].length;
+		if (!(Number.isInteger(len) && len >= 0)) return false;
+		return _filled ? !!len : true;
+	}
+	catch (e) {
+		return false;
+	}
+};
+
+/**
  * Object array values
  * 
  * @param value - parse array value
@@ -511,7 +549,7 @@ export const _values = (value: any, entries: boolean = false, object: boolean = 
 		}
 		else if (object){
 			const arr = Object.entries(value);
-			if (arr.length || (_empty(value) && Object.getPrototypeOf(value) === Object.prototype)){
+			if (arr.length || (_empty(value) && _isObject(value))){
 				if (!entries && arr.length){
 					const values: any[] = [];
 					for (const v of arr) values.push(v[1]);
@@ -520,7 +558,7 @@ export const _values = (value: any, entries: boolean = false, object: boolean = 
 				else items = arr;
 			}
 		}
-		else if (_empty(value) && Object.getPrototypeOf(value) === Object.prototype) items = []; //{}
+		else if (_empty(value) && _isObject(value)) items = []; //{}
 	}
 	if ('undefined' !== typeof flatten){
 		let depth: any = flatten;

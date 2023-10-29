@@ -27,7 +27,7 @@ export const _xuid = (): string => Math.random().toString(36).substring(2) + (ne
  */
 export const _uuid = (length?: number, template?: string): string => {
 	const len: number = length !== undefined && !isNaN(parseInt(length + '')) && Number.isInteger(length) && length >= 7 && length <= 64 ? length : 16;
-	const _create = () => {
+	const _get_uuid = () => {
 		let buffer = '';
 		while (buffer.length < len) buffer += _xuid();
 		return buffer.substring(0, len);
@@ -37,11 +37,11 @@ export const _uuid = (length?: number, template?: string): string => {
 		let append: boolean = true;
 		const tmp = template.replace(/\{uuid\}/g, () => {
 			if (append) append = false;
-			return _create();
+			return _get_uuid();
 		});
-		uuid = append ? tmp + _create() : tmp;
+		uuid = append ? tmp + _get_uuid() : tmp;
 	}
-	else uuid = _create();
+	else uuid = _get_uuid();
 	return uuid;
 };
 
@@ -309,19 +309,20 @@ export const _toLowerCase = (value: any): string => _str(value).toLowerCase();
 export const _toUpperCase = (value: any): string => _str(value).toUpperCase();
 
 /**
- * Get string buffer unique hash code
+ * Parse text value hash code
  * 
  * @example
  * _hashCode('Hello world!') => -52966915
+ * _hashCode('Hello') => 69609650
  * 
- * @param buffer  Parse string value
- * @returns `number` hash
+ * @param value - parse text value
+ * @returns `number` ~ hash code | `0` when blank
  */
-export const _hashCode = (buffer: any): number => {
+export const _hashCode = (value: any): number => {
   let hash = 0;
-  if (!(buffer = _str(buffer))) return hash;
-  for (let i = 0; i < buffer.length; i ++){
-    let chr = buffer.charCodeAt(i);
+  if (!(value = _str(value))) return hash;
+  for (let i = 0; i < value.length; i ++){
+    let chr = value.charCodeAt(i);
     hash = ((hash << 5) - hash) + chr;
     hash |= 0; //Convert to 32bit integer
   }
@@ -329,32 +330,38 @@ export const _hashCode = (buffer: any): number => {
 };
 
 /**
- * Get string buffer unique hash code in `string` format
- * - alias `String(_hashCode(buffer)).replace(/^-/, 'x')`
+ * Parse text value hash code in `string` format ~ uses `_hashCode(value)` but prepends `'n'` when result number is negative and `'x'` when positive
  * 
  * @example
- * _hashCodeStr('Hello world!') => 'x52966915'
- * _hashCodeStr('Hello') => '69609650'
+ * _hashCodeStr('Hello world!') => 'n52966915'
+ * _hashCodeStr('Hello') => 'x69609650'
  * 
- * @param buffer  Parse string value
- * @returns `string` hash
+ * @param value - parse text value
+ * @returns `string` ~ has code text
  */
-export const _hashCodeStr = (buffer: any): string => String(_hashCode(buffer)).replace(/^-/, 'x');
+export const _hashCodeStr = (value: any): string => {
+	const code: string = _hashCode(value) + '', re = /^-/;
+	return re.test(code) ? code.replace(re, 'n') : 'x' + code;
+};
 
 /**
- * Get string buffer hashCode (i.e. `_hash53('Hello world!')` => `5211024121371232` (length=16))
- * - A simple but high quality 53-bit string hash generator based on
- *   `cyrb53` script by `bryc` (https://stackoverflow.com/a/52171480/3735576)
+ * Parse text value hash code using hash53
+ * - A simple but high quality 53-bit string hash generator
+ * - Based on `cyrb53` script by `bryc` (https://stackoverflow.com/a/52171480/3735576)
  * 
- * @param buffer  Parse string value
- * @param seed  Hash entropy
- * @returns `number` hash
+ * @example
+ * _hash53('Hello world!') => 5211024121371232
+ * 
+ * @param value - parse text value
+ * @param seed - hash entropy seed
+ * @returns `number` ~ 53-bit hash code (length=16) | `0` when blank
  */
-export const _hash53 = (buffer: any, seed: number = 0): number => {
+export const _hash53 = (value: any, seed: number = 0): number => {
+	if (!(value = _str(value))) return 0;
 	if (isNaN(seed)) seed = 0;
 	let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
-	for (let i = 0, ch; i < buffer.length; i++){
-		ch = buffer.charCodeAt(i);
+	for (let i = 0, ch; i < value.length; i++){
+		ch = value.charCodeAt(i);
 		h1 = Math.imul(h1 ^ ch, 2654435761);
 		h2 = Math.imul(h2 ^ ch, 1597334677);
 	}
@@ -619,4 +626,139 @@ export const _textMaxLength = (value: any, max: number = 1000, mode: 0|1|2 = 0):
 	const append_len = append.length, text_len = max_len - append_len;
 	if (text_len > append_len && len > text_len) return value.substring(0, text_len) + append;
 	return value.substring(0, max_len);
+};
+
+/**
+ * Custom text encrypt/decrypt cypher ~ `v20231027232850`
+ * 
+ * @param value - text value ~ `string`
+ * @param index - index offset ~ `integer` (default: `0`)
+ * @param key - parse key ~ `string` (default: `'QWxvaG9tb3JhIQ'`)
+ * @returns `string` buffer | `'ERROR'` on failure
+ */
+export const _cr = (value: any, index?: any, key?: any): string => {
+	const text: string = [null, undefined].includes(value) ? '' : String(value);
+	const offset: number = Number.isInteger(index = parseInt(index as any)) && index >= 0 ? index : 0;
+	const pass: string = ([null, undefined].includes(key as any) ? '' : String(key)) || 'QWxvaG9tb3JhIQ';
+	let buffer: string = '';
+	for (let i = 0; i < text.length; i ++){
+		const char: string = String.fromCharCode(text[i].charCodeAt(0) ^ (pass[(offset + i) % pass.length].charCodeAt(0) ** 2));
+		buffer += char;
+	}
+	return buffer;
+};
+
+/**
+ * Parse key value text ~ escapes/restores values delimiter (i.e. `'='`) and entries delimiter (i.e. `'\n'`)
+ * 
+ * @param value - parse value text (`string`)
+ * @param _escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param _value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
+ * @param _entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
+ * @returns `string`
+ */
+export const _keyValue = (value: any, _escape: boolean = false, _value_delimiter: string = '=', _entries_delimiter: string = '\n'): string => {
+	if (!(value = _str(value, true))) return value;
+	const vd = '\x1E', value_delimiter = _str(_value_delimiter) || '=';
+	const ed = '\x1D', entries_delimiter = _str(_entries_delimiter) || '\n';
+	if (_escape) return value.replace(new RegExp(value_delimiter, 'g'), vd).replace(new RegExp(entries_delimiter, 'g'), ed);
+	return value.replace(new RegExp(vd, 'g'), value_delimiter).replace(new RegExp(ed, 'g'), entries_delimiter);
+};
+
+/**
+ * Parse serialized key values ~ (i.e. `'key=value\nkey2=value2'`)
+ * 
+ * @param value - parse serialized text
+ * @param _escape - whether to escape delimiters (default: `false` ~ restore)
+ * @returns `[key: string, value: string][]` entries list with unique keys
+ */
+export const _parseKeyValues = (value: any, _escape: boolean = false, _value_delimiter: string = '=', _entries_delimiter: string = '\n'): [key: string, value: string][] => {
+	let buffer: {[key: string]: [string, string]} = {}, parse_entries: -1|0|1 = -1; //-1 = undefined, 0 = disabled, 1 = enabled
+	for (let item of _str(value, true).split('\n')){
+		if (!(item = _str(item, true))) continue;
+		const parts: string[] = item.trim().split('=');
+		if (parse_entries < 0) parse_entries = parts.length >= 2 ? 1 : 0;
+		const key: string = _keyValue(parts[0], _escape, _value_delimiter, _entries_delimiter);
+		const value: string = !parse_entries ? key : _keyValue(parts[1], _escape, _value_delimiter, _entries_delimiter);
+		if (key && value) buffer[key.toLowerCase()] = [key, value];
+	}
+	return Object.values(buffer);
+};
+
+/**
+ * Serialize key values ~ (i.e. `['key','value','key2','value2']` => `'key=value\nkey2=value2'`)
+ * 
+ * @param values - parse values ~ (i.e. `string|string[]|[string,string][]|{[key:string]:string}[]`)
+ * @param _key - specify entry `key` property name when `values` is `{[key:string]:string}[]`
+ * @param _value - specify entry `value` property name when `values` is `{[key:string]:string}[]`
+ * @returns `string` serialized key values
+ */
+export const _strKeyValues = (values: any, _key?: any, _value?: any, _value_delimiter: string = '=', _entries_delimiter: string = '\n'): string => {
+	const buffer: {[key: string]: [string, string]} = {};
+	const value_delimiter = _str(_value_delimiter) || '=';
+	const entries_delimiter = _str(_entries_delimiter) || '\n';
+	let key_prop: any = undefined, val_prop: any = undefined, mode: -1|0|1 = -1, same: boolean = true;
+	const _set_mode = (item: any): void => {
+		_key = _str(key_prop = _key, true);
+		_value = _str(val_prop = _value, true);
+		if (_key && !_value){
+			_value = _key;
+			val_prop = key_prop;
+		}
+		else if (_value && !_key){
+			_key = _value;
+			key_prop = val_prop;
+		}
+		if (Object(item) === item){
+			if (!_key && !_value && Object(item) === item){
+				if (item.hasOwnProperty('key')) val_prop = _value = key_prop = _key = 'key';
+				if (item.hasOwnProperty('value')){
+					if (!_key && item.hasOwnProperty('label')){
+						val_prop = _value = 'label';
+						key_prop = _key = 'value';
+					}
+					else key_prop = _key = val_prop = _value = 'value';
+				}
+			}
+			mode = _str(key_prop, true) && _str(val_prop, true) && item.hasOwnProperty(key_prop) && item.hasOwnProperty(val_prop) ? 1 : 0;
+		}
+	};
+	const _str_value = (val: any): string => _keyValue(val, true, value_delimiter, entries_delimiter);
+	const _add_item = (item: any, _recurse: boolean): void => {
+		if (Object(item) === item){
+			if (Object(item[Symbol.iterator]) === item[Symbol.iterator]){
+				const entries: any[] = [...item];
+				if (!entries.length) return;
+				if (_recurse && Object(entries[0]) === entries[0]) return void entries.forEach(v => _add_item(v, false));
+				if (mode < 0) _set_mode(entries);
+				const key: string = _str_value(entries[mode ? key_prop : 0]);
+				const val: string = _str_value(entries[mode ? val_prop : 1]);
+				if (key && val){
+					if (key.toLowerCase() !== val.toLowerCase()) same = false;
+					buffer[key.toLowerCase()] = [key, val];
+				}
+			}
+			else {
+				if (mode < 0) _set_mode(item);
+				if (!mode) return;
+				const key: string = _str_value(item[key_prop]);
+				const val: string = _str_value(item[val_prop]);
+				if (key && val){
+					if (key.toLowerCase() !== val.toLowerCase()) same = false;
+					buffer[key.toLowerCase()] = [key, val];
+				}
+			}
+		}
+		else if (_recurse){
+			const text: string = _str(item, true);
+			if (!text) return;
+			const entries: any[] = _parseKeyValues(text, false, value_delimiter, entries_delimiter);
+			return void (entries.length ? entries.forEach(v => _add_item(v, false)) : null);
+		}
+	};
+	const items: any[] = Object(values) === values && Object(values[Symbol.iterator]) === values[Symbol.iterator] ? [...values] : [values];
+	_add_item(items, true);
+	return Object.values(buffer)
+	.map(entry => same ? entry[0] : entry.join(value_delimiter))
+	.join(entries_delimiter);
 };
