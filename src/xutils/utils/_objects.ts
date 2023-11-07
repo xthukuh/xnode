@@ -1,7 +1,7 @@
 import { bool } from '../types';
 import { _jsonCopy, _jsonParse, _jsonStringify } from './_json';
-import { _int, _num } from './_number';
-import { _str, _string, _stringable } from './_string';
+import { _int, _num, _posInt } from './_number';
+import { _errorText, _str, _string, _stringable } from './_string';
 import { _isBuffer } from '../3rd-party';
 
 /**
@@ -287,10 +287,10 @@ export const _dotInflate = (value: any): {[key: string]: any} => {
  * 
  * @param dot_path - dot separated keys
  * @param operations - supports operations (i.e. '!reverse'/'!slice=0') ~ tests dot keys using `/^[-_0-9a-zA-Z]+\=([^\=\.]*)$/` instead of default `/^[-_0-9a-zA-Z]+$/`
- * @param _failure - error handling ~ `0` = (default) disabled, '1' = warn error, `2` = warn and throw error
+ * @param _failure - `FailError` mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
  * @returns `string` valid dot path
  */
-export const _validDotPath = (dot_path: string, operations: boolean = false, _failure: 0|1|2 = 0): string => {
+export const _validDotPath = (dot_path: string, operations: boolean = false, _failure: 0|1|2|3 = 0): string => {
 	try {
 		if (!(dot_path = _str(dot_path, true))) throw new TypeError('Invalid dot path value.');
 		const parts: string[] = [];
@@ -318,10 +318,7 @@ export const _validDotPath = (dot_path: string, operations: boolean = false, _fa
 		return buffer.join('.');
 	}
 	catch (e){
-		if (_failure){
-			if (_failure === 1) console.warn(e, {dot_path, operations});
-			else if (_failure === 2) throw e;
-		}
+		new FailError(e, _failure, {dot_path, operations});
 		return '';
 	}
 };
@@ -370,11 +367,11 @@ export const _bool = (value: any, strict: boolean = false, trim: boolean = true)
  * @param path - dot separated keys ~ optional array operations
  * @param target - traverse object
  * @param ignoreCase - whether to ignore case when matching keys (default: `false`)
- * @param _failure - error handling ~ `0` = (default) disabled, `1` = warn error, `2` = throw error
+ * @param _failure - `FailError` mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
  * @param _default - default result on failure
  * @returns `any` dot path match result
  */
-export const _dotGet = (path: string, target: any, ignoreCase: boolean = false, _failure: 0|1|2 = 0, _default?: any): any => {
+export const _dotGet = (path: string, target: any, ignoreCase: boolean = false, _failure: 0|1|2|3 = 0, _default?: any): any => {
 	try {
 		const keys = (path = _validDotPath(path, true, _failure)).split('.');
 		if (!keys.length) throw new TypeError('Invalid resolve dot path format.');
@@ -431,10 +428,7 @@ export const _dotGet = (path: string, target: any, ignoreCase: boolean = false, 
 		return !abort ? value : _default;
 	}
 	catch (e) {
-		if (_failure){
-			if (_failure === 1) console.warn(e, {path, target});
-			else if (_failure === 2) throw e;
-		}
+		new FailError(e, _failure, {path, target, ignoreCase, _default}, 'DotGetError');
 		return _default;
 	}
 };
@@ -712,3 +706,94 @@ export const _trans = (template: string, context: {[name: string]: any}, _defaul
 		return val;
 	});
 };
+
+/**
+ * Parse iterable values array list
+ * 
+ * @param values - parse values
+ * @returns `T[]` array list
+ */
+export const _arrayList = <T = any>(values: any): T[] => _isArray(values, true) ? [...values] : [];
+
+/**
+ * Map values (`object[]`) by key property ID value
+ * - ID value is a trimmed `string` (lowercase when argument `_lowercase` is `true`)
+ * 
+ * @param values - parse values array ~ `<T = any>[]`
+ * @param prop - ID property name (default: `''` ~ uses `string` entry value as ID for scalar values array)
+ * @param _lowercase - (default: `false`) use lowercase ID value for uniform ID value case
+ * @param _texts - (default: `0`) parse text entry mode ~ **enabled when `prop` argument is blank**
+ * - `0` => disabled
+ * - `1` => trim text values
+ * - `2` => stringify and trim text values
+ * @param _silent - (default: `true`) do not log warnings when values entry with invalid ID is skipped 
+ * @returns `{[id: string]: T}` object with {ID=entry} mapping
+ */
+export const _mapValues = <T = any>(values: T[], prop: string = '', _lowercase: boolean = false, _texts: 0|1|2 = 0, _silent: boolean = true): {[id: string]: T} => {
+	const buffer: {[key: string]: T} = {}, items: any[] = _arrayList(values), key = _str(prop, true);
+	for (let i = 0; i < items.length; i ++){
+		let entry: any = items[i], id: string = '';
+		if (!key){
+			if ((id = _str(entry, true)) && [1, 2].includes(_texts)){
+				if (_texts === 2) entry = _str(entry, true);
+				else if ('string' === typeof entry) entry = _str(entry, true);
+			}
+		}
+		else id = _str(entry?.[key], true);
+		if (!id){
+			if (!_silent) console.warn('Invalid map values entry. The ID value is blank.', {i, key, entry});
+			continue;
+		}
+		if (_lowercase) id = id.toLowerCase();
+		buffer[id] = entry;
+	}
+	return buffer;
+};
+
+/**
+ * @class `FailError` _extends `Error`_
+ */
+export class FailError extends Error
+{
+	/**
+	 * - error message
+	 */
+	message: string;
+
+	/**
+	 * - error mode
+	 */
+	mode: 0|1|2|3;
+
+	/**
+	 * - error debug
+	 */
+	debug: any;
+
+	/**
+	 * - error name
+	 */
+	name: string;
+
+	/**
+	 * Failure error instance/handler
+	 * 
+	 * @param reason - parse error message
+	 * @param mode - error mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
+	 * @param debug - error debug
+	 * @param name - error name
+	 */
+	constructor(reason: any, mode: 0|1|2|3 = 0, debug: any = Symbol('undefined'), name?: string){
+		const err_message: string = _errorText(reason) || 'Blank error message.';
+		const err_mode: 0|1|2|3 = [0, 1, 2, 3].includes(mode = _posInt(mode, 0, 3) ?? 0 as any) ? mode : 0;
+		const err_debug: any[] = 'symbol' === typeof debug && String(debug) === 'Symbol(default)' ? [] : [debug];
+		const err_name: string = _str(name, true) || _str(reason?.name, true) || 'FailError';
+		super(err_message);
+		this.message = err_message;
+		this.mode = err_mode;
+		this.debug = err_debug[0];
+		this.name = err_name;
+		if (err_mode === 1 || err_mode === 2) console[err_mode === 1 ? 'warn' : 'error'](_str(this, true), ...err_debug);
+		else if (err_mode === 3) throw this;
+	}
+}

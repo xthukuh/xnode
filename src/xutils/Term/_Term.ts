@@ -100,7 +100,7 @@ export class Term
 			debug: 'fg_gray',
 			error: 'fg_red',
 			warn: 'fg_yellow',
-			info: 'fg_cyan',
+			info: ['fg_cyan', 'bright'],
 			success: 'fg_green',
 			bg_log: ['bg_blue', 'fg_white'],
 			bg_debug: ['bg_gray', 'fg_black'],
@@ -315,6 +315,13 @@ export class Term
 			if (!(_formats.length && _val.trim().length)) return _val;
 			return this.format(_formats, _val).values()[0];
 		};
+	}
+
+	/**
+	 * Log empty line ~ `console.log(' ')`
+	 */
+	static br(): void {
+		console.log(' ');
 	}
 
 	/**

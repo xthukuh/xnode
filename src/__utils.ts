@@ -20,15 +20,15 @@ export const _dirPath = (dir: string, silent: boolean = false, type: string = 'd
 	type = (type = _str(type, true)) ? (type.toLowerCase().indexOf('dir') > -1 ? type : type + ' directory') : 'directory';
 	let path: string = _str(dir, true);
 	if (!path){
-		if (!silent) _print(`[E] The ${type} path is empty.`, true);
+		if (!silent) _print(`The ${type} path is empty.`, true);
 		return '';
 	}
 	if (!(path = _realpath(dir = path))){
-		if (!silent) _print(`[E] The ${type} path (${dir}) does not exist.`, true);
+		if (!silent) _print(`The ${type} path (${dir}) does not exist.`, true);
 		return '';
 	}
 	if (_filetype(path) < 2){
-		if (!silent) _print(`[E] The ${type} path (${path}) is not a folder.`, true);
+		if (!silent) _print(`The ${type} path (${path}) is not a folder.`, true);
 		return '';
 	}
 	return path;

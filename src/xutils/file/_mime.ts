@@ -1,4 +1,4 @@
-import { _str } from '../utils';
+import { FailError, _str } from '../utils';
 
 /**
  * File extension mime types
@@ -46,24 +46,16 @@ export interface IMimeType {
 }
 
 /**
- * Basename error interface
- */
-export interface IMimeTypeError extends Error {
-	name: string;
-	item: IMimeType;
-}
-
-/**
- * Get normalized file mime type (i.e. 'application/json; charset=utf-8' => 'application/json')
+ * Parse file mime type
  * 
- * @param  string	$value	- Parse value (mime|ext|file-path)
- * @param  string	$ext		- ByRef file extension (i.e. 'txt', 'png')
- * @param  string	$error	- ByRef error message
- * @return string|false
+ * @example String(_mime('application/json; charset=utf-8')) => 'application/json'
+ * 
+ * @param value - parse mime type
+ * @param _failure - `FailError` mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
+ * @returns `IMimeType` stringable mime type object
  */
-export const _mime = (value: any, _failure: 0|1|2 = 0): IMimeType => {
-	const failure: 0|1|2 = [0, 1, 2].includes(_failure = parseInt(_failure + '') as any) ? _failure as (0|1|2) : 0;
-
+export const _mime = (value: any, _failure: 0|1|2|3 = 0): IMimeType => {
+	
 	//mime type item
 	const item: IMimeType = {
 		value,
@@ -106,15 +98,7 @@ export const _mime = (value: any, _failure: 0|1|2 = 0): IMimeType => {
 		return item; //result
 	}
 	catch (e: any){
-		if (failure){ //failure - custom error
-			class MimeTypeError extends Error implements IMimeTypeError {
-				name: string = 'MimeTypeError';
-				item: IMimeType = item;
-			}
-			const error = new MimeTypeError(`${e.message || e}`);
-			if (failure === 2) throw error; //throw
-			else console.warn(error + '', {item}); //warn
-		}
+		new FailError(e, _failure, {item}, 'MimeTypeError');
 		return item; //result
 	}
 }

@@ -762,3 +762,69 @@ export const _strKeyValues = (values: any, _key?: any, _value?: any, _value_deli
 	.map(entry => same ? entry[0] : entry.join(value_delimiter))
 	.join(entries_delimiter);
 };
+
+/**
+ * Text wrap lines on length limit
+ * 
+ * @param text - parse text
+ * @param max_length - max line length
+ * @param word_break - whether to use word break (default `false`)
+ * @param onAddLine - add line buffer handler callback ~ return modified line value or `undefined`|`null` to skip
+ * @returns `string[]` text wrap lines
+ */
+export const _wrapLines = (text: any, max_length: number = 0, word_break: boolean = false, onAddLine?: (line:string,lines_buffer:string[])=>string|undefined): string[] => {
+	const _onAddLine: ((line:string,lines_buffer:string[])=>string|undefined)|undefined = 'function' === typeof onAddLine ? onAddLine : undefined;
+	const max: number = Number.isInteger(max_length = parseInt(max_length as any)) && max_length >= 0 ? max_length : 0;
+	let lines_buffer: string[] = [], buffer_length: number = 0, line_buffer: string = '';
+	const _add_line = (line: string): void => {
+		if (_onAddLine){
+			const res: any = _onAddLine(line, lines_buffer);
+			if ([undefined, null].includes(res)) return;
+			line = _str(res);
+		}
+		lines_buffer.push(line);
+	};
+	const _parse_line = (line: string) => {
+		if (!max) return _add_line(line);
+		const _line_buffer_add = (word: string) => {
+			const space: string = (line_buffer.length ? ' ' : '');
+			const line_text: string = line_buffer + space + word;
+			if (line_text.length > max){
+				if (word_break){ //-- word break
+					let val: string = '', offset: number = 0;
+					while ((val = line_text.substring(offset, offset + max)).length === max){
+						_add_line(val);
+						offset += max;
+					}
+					line_buffer = val;
+				}
+				else {
+					if (word.length > max){ //-- word break ~ longer than max
+						let val: string = '', offset: number = 0;
+						while ((val = line_text.substring(offset, offset + max)).length === max){
+							_add_line(val);
+							offset += max;
+						}
+						line_buffer = val;
+					}
+					else { //-- wrap word
+						if (line_buffer) _add_line(line_buffer + space);
+						if ((line_buffer = word).length === max){
+							_add_line(line_buffer);
+							line_buffer = '';
+						}
+					}
+				}
+			}
+			else if (line_text.length === max){
+				_add_line(line_text);
+				line_buffer = '';
+			}
+			else line_buffer = line_text;
+		};
+		for (const word of line.split(' ')) _line_buffer_add(word);
+	};
+	for (const line of _str(text).split('\n')) _parse_line(line);
+	if (line_buffer) _add_line(line_buffer);
+	return lines_buffer;
+};

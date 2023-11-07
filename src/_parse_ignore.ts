@@ -1,6 +1,6 @@
 import { _lsDir, _filetype, _readSync, _realpath } from './xfs';
 import { _regEscape, _str, _values } from './xutils';
-import { _dirPath, _isWin, _normSep, _print } from './_utils';
+import { _dirPath, _isWin, _normSep, _print } from './__utils';
 
 //pattern ignore interface
 interface IPatternIgnore {
