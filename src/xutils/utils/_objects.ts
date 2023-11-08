@@ -503,7 +503,7 @@ export const _isArray = (value: any, _filled: boolean = false, _mode: 0|1|2 = 0)
 	_mode = [0, 1, 2].includes(_mode = parseInt(_mode as any) as any) ? _mode : 0;
 	if (!Array.isArray(value)){
 		if (_mode === 1) return false;
-		const it = value[Symbol.iterator];
+		const it = value?.[Symbol.iterator];
 		if (Object(it) !== it) return false;
 		if (_mode !== 2 && !['values', '[Symbol.iterator]'].includes(it.name)) return false;
 	}
