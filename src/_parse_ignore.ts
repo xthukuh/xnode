@@ -1,4 +1,4 @@
-import { _lsDir, _filetype, _readSync, _realpath } from './xfs';
+import { _lsDir, _pathinfo, _readSync, _realpath } from './xfs';
 import { _regEscape, _str, _values } from './xutils';
 import { _dirPath, _isWin, _normSep, _print } from './__utils';
 
@@ -62,7 +62,7 @@ const _knownIgnore = (path: string, is_dir: boolean = false): boolean => {
 		if (KNOWN_IGNORE_DIRS.includes(name)) return true; //known dirs
 		if (name === 'vendor'){
 			const dir = parts.join('/');
-			if (_filetype(dir + '/composer.json') === 1) return true; //composer vendor dir
+			if ((_pathinfo(dir + '/composer.json')?.type ?? 0) === 1) return true; //composer vendor dir
 		}
 		return false;
 	}
@@ -115,7 +115,7 @@ const _ignore = (pattern: string): IPatternIgnore => {
 
 //fn => parse gitignore rules
 const _parseRules = (path: string): IPatternIgnore[] => {
-	const content = _filetype(path) === 1 ? _readSync<string>(path, true) : '';
+	const content = (_pathinfo(path)?.type ?? 0) === 1 ? _readSync<string>(path, true) : '';
 	if (!content) return [];
 	const lines: string[] = [...new Set(content.split('\n').map(v => v.trim()).filter(v => v && !/^#/.test(v)))];
 	return lines.map(v => _ignore(v));

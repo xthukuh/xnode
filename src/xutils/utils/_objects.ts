@@ -71,24 +71,25 @@ export const _getAllProperties = (value: any, statics: boolean = false): (string
 /**
  * Check if value has property
  * 
- * @param value  Search `object` value
- * @param prop  Find property
+ * @param value - parse `object` value
+ * @param prop - property name
  * @param own  [default: `false`] As own property
- * 
+ * @returns `boolean`
  */
 export const _hasProp = (value: any, prop: any, own: bool = false): boolean => {
-	if (!('object' === typeof value && value)) return false;
+	if (!('object' === typeof value && !!value)) return false;
 	return Object.prototype.hasOwnProperty.call(value, prop) || (own ? false : prop in value);
 };
 
 /**
  * Check if object has properties
  * 
- * @param value  Search `object` value
- * @param props  Spread find properties
- * 
+ * @param value - parse `object` value
+ * @param props - property names
+ * @returns `boolean`
  */
-export const _hasProps = (value: any, ...props: any): boolean => {
+export const _hasProps = (value: any, ...props: any[]): boolean => {
+	if (!('object' === typeof value && !!value)) return false;
 	if (!props.length) return false;
 	for (const key of props){
 		if (!_hasProp(value, key)) return false;
@@ -99,16 +100,18 @@ export const _hasProps = (value: any, ...props: any): boolean => {
 /**
  * Check if object has any of the properties
  * 
- * @param value  Search `object` value
- * @param props  Spread find properties
- * 
+ * @param value - parse `object` value
+ * @param props - property names
+ * @returns `false|any[]`
  */
-export const _hasAnyProps = (value: any, ...props: any): boolean => {
+export const _hasAnyProps = (value: any, ...props: any[]): false|any[] => {
+	if (!('object' === typeof value && !!value)) return false;
 	if (!props.length) return false;
+	const found: Set<any> = new Set();
 	for (const key of props){
-		if (_hasProp(value, key)) return true;
+		if (_hasProp(value, key)) found.add(key);
 	}
-	return false;
+	return found.size ? [...found] : false;
 };
 
 /**
@@ -132,9 +135,12 @@ export interface IProperty {
 	value: any;
 
 	/**
-	 * - property exists state ~ `0` = not found, `1` = own property, `2` = not own property
+	 * - property exists state
+	 * - `0` = not found
+	 * - `1` = own property
+	 * - `2` = not own property
 	 */
-	exists: 0|1|2;
+	exists: 0|1|2|false;
 }
 
 /**
@@ -187,7 +193,7 @@ export const _getProp = (value: any, match: any, ignoreCase: bool = false): IPro
 /**
  * Check if value is a class function
  * 
- * @param value  Test value
+ * @param value - parse value
  */
 export const _isClass = (value: any): boolean => {
 	if (!(value && value.constructor === Function) || value.prototype === undefined) return false;
@@ -196,10 +202,11 @@ export const _isClass = (value: any): boolean => {
 };
 
 /**
- * Check if value is a function (or class optionally)
+ * Check if value is a `function`
  * 
- * @param value  Test value
- * @param orClass  [default: `false`] Includes class function
+ * @param value - parse value
+ * @param orClass - (default: `false`) include `class` objects
+ * @returns `boolean`
  */
 export const _isFunc = (value: any, orClass: boolean = false): boolean => {
 	return value && 'function' === typeof value && (orClass ? true : !_isClass(value));
@@ -210,8 +217,8 @@ export const _isFunc = (value: any, orClass: boolean = false): boolean => {
  * - Example: `_minMax(20, 10)` => `[10, 20]`
  * - Example: `_minMax(0.23, null)` => `[null, 0.23]`
  *  
- * @param a  Compare value 1
- * @param b  Compare value 2
+ * @param a - first value
+ * @param b - second value
  * @returns `[min, max]`
  */
 export const _minMax = (a: any, b: any): [min: any, max: any] => {
@@ -224,10 +231,13 @@ export const _minMax = (a: any, b: any): [min: any, max: any] => {
 };
 
 /**
- * Flatten object values recursively to dot paths (i.e. `{a:{x:1},b:{y:2,z:[5,6]}}` => `{'a.x':1,'b.y':2,'b.z.0':5,'b.z.1':6}`)
+ * Flatten `object` values recursively to dot paths
  * 
- * @param value  Parse object
- * @param omit  Omit entry keys/dot paths
+ * @example
+ * _dotFlat({a:{x:1},b:{y:2,z:[5,6]}}) //{'a.x':1,'b.y':2,'b.z.0':5,'b.z.1':6}
+ * 
+ * @param value - parse `object` value
+ * @param omit - omit entry keys/dot paths
  * @returns `{[key: string]: any}`
  */
 export const _dotFlat = (value: any, omit: string[] = []):{[key: string]: any} => {
@@ -247,7 +257,10 @@ export const _dotFlat = (value: any, omit: string[] = []):{[key: string]: any} =
 };
 
 /**
- * Parse dot flattened object to [key => value] object ~ reverse `_dotFlat()`
+ * Unflatten dot flattened `object` ~ reverse of `_dotFlat`
+ * 
+ * @example
+ * _dotInflate({'a.x':1,'b.y':2,'b.z.0':5,'b.z.1':6}) //{a:{x:1},b:{y:2,z:[5,6]}}
  * 
  * @param value - parse value ~ `{[dot_path: string]: any}`
  * @returns `{[key: string]: any}` parsed result | `{}` when value is invalid
@@ -797,3 +810,24 @@ export class FailError extends Error
 		else if (err_mode === 3) throw this;
 	}
 }
+
+/**
+ * Extract `object` value property entries
+ * 
+ * @param value - parse `object` value
+ * @param props - extract property names
+ * @param _omit - (default: `false`) **exclude** property names extract mode
+ * @param _undefined - (default: `false`) include `undefined` property names
+ * @returns `{[prop: any]: any}`
+ */
+export const _propsObj = (value: any, props?: any[], _omit: boolean = false, _undefined: boolean = false): {[key:string|number|symbol]: any} => {
+	const item: {[key: string|number|symbol]: any} = Object(value), keys: any[] = _arrayList(props);
+	if (_omit) return Object.fromEntries(Object.entries(item).filter(v => !keys.includes(v[0])));
+	return keys.reduce((prev: {[key: string|number|symbol]: any}, key: any): {[key: string|number|symbol]: any} => {
+		if (!_empty(key, true)){
+			if (item.hasOwnProperty(key)) prev[key] = item[key];
+			else if (_undefined) prev[key] = undefined;
+		}
+		return prev;
+	}, {});
+};

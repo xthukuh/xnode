@@ -1,4 +1,4 @@
-import { _filetype, _realpath } from './xfs';
+import { _pathinfo, _realpath } from './xfs';
 import { _str } from './xutils';
 
 //Print console log
@@ -27,7 +27,7 @@ export const _dirPath = (dir: string, silent: boolean = false, type: string = 'd
 		if (!silent) _print(`The ${type} path (${dir}) does not exist.`, true);
 		return '';
 	}
-	if (_filetype(path) < 2){
+	if ((_pathinfo(path)?.type ?? 0) !== 2){
 		if (!silent) _print(`The ${type} path (${path}) is not a folder.`, true);
 		return '';
 	}

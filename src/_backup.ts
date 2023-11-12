@@ -1,6 +1,6 @@
 import { _parseIgnore } from './_parse_ignore';
 import { _dirPath, _normSep, _print } from './__utils';
-import { _exists, _filetype, _hashFile, _hashes, _mkdir, _processArgs } from './xfs';
+import { IPathInfo, _exists,  _hashFile, _hashes, _mkdir, _pathinfo, _processArgs } from './xfs';
 import { Term, _asyncQueue, _basename, _batchValues, _errorText, _filepath, _jsonStringify, _str } from './xutils';
 
 //Backup
@@ -22,19 +22,23 @@ export const _run_backup = async (): Promise<any> => {
 			const source_dir: string = _normSep(tmp);
 			let dest_dir: string = _filepath(destination).toString();
 			if (!dest_dir) throw new TypeError('The backup destination directory path is invalid!');
-			const dest_exists: 0|1|2|3 = _filetype(dest_dir);
-			if (!dest_exists){
-				Term.debug(`>> creating destination directory... (${dest_dir})`);
+			const dest_info: IPathInfo|undefined = _pathinfo(dest_dir, 2);
+			if (!dest_info){
+				Term.debug(`>> Creating destination directory... (${dest_dir})`);
 				const res = _mkdir(dest_dir);
-				if (!res) throw new TypeError(`Failed to get backup destination folder (${dest_dir}).`);
+				if (!res) throw new TypeError(`Unable to create backup destination directory (${dest_dir}).`);
 				dest_dir = res;
+			}
+			else {
+				if (!dest_info.isDirectory) throw new TypeError(`The destination directory path is not a folder. "${dest_info.path_full}" (type = ${dest_info.type})`);
+				dest_dir = dest_info.target;
 			}
 			dest_dir = _normSep(dest_dir);
 
 			//-- ready
 			Term.debug(`<< ready - backup source       :  "${source_dir}"`);
 			Term.debug(`<< ready - backup destination  :  "${dest_dir}"`);
-			return Term.warn('HALT DEBUG!');
+			// return Term.warn('HALT DEBUG!');
 
 			//-- parse source contents
 			Term.debug(`>> parsing source directory contents... (${source_dir})`);
@@ -47,13 +51,13 @@ export const _run_backup = async (): Promise<any> => {
 			await _asyncQueue(paths, 20, async (path, i, len) => {
 				const from: string = source_dir + '/' + path;
 				const to: string = dest_dir + '/' + path;
-				const from_type: any = _filetype(from);
-				let to_type: any = undefined;
+				const from_type: number = (_pathinfo(from)?.type ?? 0);
+				let to_type: number = 0;
 				let skip: boolean = false;
 				let skip_reason: string = '';
 				let exists: boolean = false;
 				if (!!(exists = _exists(to))){
-					to_type = _filetype(to);
+					to_type = (_pathinfo(to)?.type ?? 0);
 					if (from_type >= 2 && to_type >= 2){
 						skip = true;
 						skip_reason = 'subfolder';

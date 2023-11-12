@@ -2,7 +2,7 @@ import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
 import * as Crypto from 'crypto';
-import { Term, _errorText, _jsonParse } from '../xutils';
+import { Term, _errorText, _getAllProperties, _jsonParse, _posInt } from '../xutils';
 
 
 /**
@@ -27,16 +27,19 @@ export const _exists = (path: string): boolean => {
  * @param path - file path
  * @returns `string` result | `''` on error
  */
-export const _realpath = (path: string): string => {
-	try {
-		if (!_exists(path)) return '';
-		const res: string = Fs.realpathSync(path);
-		return res;
-	}
-	catch (e){
-		console.warn('[E] _realpath', e);
-		return '';
-	}
+export const _realpath = (path: string, target: boolean = false): string => {
+	if (!_exists(path)) return '';
+	return target ? Fs.realpathSync(path) : Path.resolve(path);
+};
+
+/**
+ * Get symbolic link target path
+ * 
+ * @param path - link path
+ * @returns `string|undefined`
+ */
+export const _target = (path: string): string => {
+	return _realpath(path, true);
 };
 
 /**
@@ -46,12 +49,12 @@ export const _realpath = (path: string): string => {
  * @param suffix - optionally, an extension to remove from the result.
  * @returns `string` result | `''` on error
  */
-export const _pathBasename = (path: string, suffix?: string): string => {
+export const _filename = (path: string, suffix?: string): string => {
 	try {
 		return Path.basename(path, suffix);
 	}
 	catch (e){
-		console.warn('[E] _pathBasename', e);
+		console.warn('[E] _filename', e);
 		return '';
 	}
 };
@@ -59,15 +62,17 @@ export const _pathBasename = (path: string, suffix?: string): string => {
 /**
  * Get path dirname
  * 
- * @param path - file path
+ * @param path - parse path
+ * @param absolute - resolve absolute path
  * @returns `string` result | `''` on error
  */
-export const _pathDirname = (path: string): string => {
+export const _dirname = (path: string, absolute: boolean = false): string => {
 	try {
-		return Path.dirname(path);
+		const dir = Path.dirname(path);
+		return absolute ? _realpath(dir) : dir;
 	}
 	catch (e){
-		console.warn('[E] _pathDirname', e);
+		console.warn('[E] _dirname', e);
 		return '';
 	}
 };
@@ -81,16 +86,15 @@ export const _pathDirname = (path: string): string => {
  * @returns `string` created directory realpath | `''` on error
  */
 export const _mkdir = (path: string, mode: string|number = 0o777, recursive: boolean = true): string => {
-	let real_path: string = _realpath(path);
-	if (real_path){
-		const type = _filetype(path);
-		if (type !== 2) throw new Error(`Create directory failed! The path already exists. (${real_path} => ${type})`);
-		return real_path;
+	let info: IPathInfo|undefined = _pathinfo(path);
+	if (info){;
+		if (!info.isDirectory) throw new Error(`Create directory failed! The path already exists "${info.path_full}" (type = ${info.type}).`);
+		return info.path_full;
 	}
 	try {
 		Fs.mkdirSync(path, {mode, recursive});
-		if (!((real_path = _realpath(path)) && _filetype(real_path) === 2)) throw new TypeError(`Failed to resolve created directory real path (${path}).`);
-		return real_path;
+		if (!((info = _pathinfo(path)) && info.isDirectory)) throw new TypeError(`Failed to resolve created directory real path (${path}).`);
+		return info.path_full;
 	}
 	catch (e){
 		throw new Error(`Create directory failed! ${e}`);
@@ -98,23 +102,108 @@ export const _mkdir = (path: string, mode: string|number = 0o777, recursive: boo
 };
 
 /**
- * Get existing file type
- * 
- * @param path - file path
- * @returns `0|1|2` ~> `0` = not found | `1` = file | `2` = directory | `3` = symlink directory
+ * Path info interface
  */
-export const _filetype = (path: string): 0|1|2|3 => {
-	try {
-		if (!_exists(path)) return 0;
-		const stats = Fs.statSync(path);
-		if (stats.isFile()) return 1;
-		if (stats.isDirectory()) return stats.isSymbolicLink() ? 3 : 2;
+export interface IPathInfo {
+	/**
+	 * 0 - unknown, 1 = file, 2 = directory, 3 = dir link, 4 = file link
+	 */
+	type: number;
+	path: string,
+	path_full: string,
+	dir: string,
+	dir_full: string,
+	target: string,
+	dev: number;
+	mode: number;
+	nlink: number;
+	uid: number;
+	gid: number;
+	rdev: number;
+	blksize: number;
+	ino: number;
+	size: number;
+	blocks: number;
+	atimeMs: number;
+	mtimeMs: number;
+	ctimeMs: number;
+	birthtimeMs: number;
+	atime: Date;
+	mtime: Date;
+	ctime: Date;
+	birthtime: Date;
+	isDirectory: boolean;
+	isFile: boolean;
+	isBlockDevice: boolean;
+	isCharacterDevice: boolean;
+	isSymbolicLink: boolean;
+	isFIFO: boolean;
+	isSocket: boolean;
+}
+
+/**
+ * Get file path stats
+ * 
+ * @param path - parse path
+ * @param mode - parse mode ~ [`0`] - fs.statSync (follows links), `1` - fs.lstatSync, `2` - merged
+ * @returns `IPathInfo|undefined`
+ */
+export const _pathinfo = (path: string, mode: 0|1|2 = 0): IPathInfo|undefined => {
+	const _get_type = (info: any): number => {
+		if (info.isFile) return info.isSymbolicLink ? 4 : 1; 
+		if (info.isDirectory) return info.isSymbolicLink ? 3 : 2; 
 		return 0;
 	}
-	catch (e){
-		if (`${e}`.indexOf('no such file or directory') < 0) console.warn('[E] _filetype', e);
-		return 0;
+	const _get_stats = (stats: Fs.Stats): any => ({
+		type: 0,
+		path,
+		path_full: _realpath(path),
+		dir: _dirname(path),
+		dir_full: _dirname(path, true),
+		target: _realpath(path, true),
+		dev: stats.dev,
+		mode: stats.mode,
+		nlink: stats.nlink,
+		uid: stats.uid,
+		gid: stats.gid,
+		rdev: stats.rdev,
+		blksize: stats.blksize,
+		ino: stats.ino,
+		size: stats.size,
+		blocks: stats.blocks,
+		atimeMs: stats.atimeMs,
+		mtimeMs: stats.mtimeMs,
+		ctimeMs: stats.ctimeMs,
+		birthtimeMs: stats.birthtimeMs,
+		atime: stats.atime,
+		mtime: stats.mtime,
+		ctime: stats.ctime,
+		birthtime: stats.birthtime,
+		isDirectory: stats.isDirectory(),
+		isFile: stats.isFile(),
+		isBlockDevice: stats.isBlockDevice(),
+		isCharacterDevice: stats.isCharacterDevice(),
+		isSymbolicLink: stats.isSymbolicLink(),
+		isFIFO: stats.isFIFO(),
+		isSocket: stats.isSocket(),
+	});
+	let info: IPathInfo|undefined = undefined;
+	if (_exists(path)){
+		mode = [0, 1, 2].includes((mode = _posInt(mode, 0) ?? 0 as any)) ? mode : 0
+		if (mode === 0) info = _get_stats(Fs.statSync(path));
+		else if (mode === 1) info = _get_stats(Fs.lstatSync(path));
+		else {
+			const stats: any = _get_stats(Fs.statSync(path));
+			const lstats: any = _get_stats(Fs.lstatSync(path));
+			for (const key in lstats){
+				if (!lstats.hasOwnProperty(key)) continue;
+				stats[key] = stats[key] || lstats[key];
+			}
+			info = stats;
+		}
 	}
+	if (info) info.type = _get_type(info);
+	return info;
 };
 
 /**
@@ -126,7 +215,7 @@ export const _filetype = (path: string): 0|1|2|3 => {
  * @returns `string[]` root directory content paths
  */
 export const _lsDir = async (dir: string, mode: number = 0, recursive: boolean = false): Promise<string[]> => {
-	if (_filetype(dir) < 2) throw new Error(`List directory path not found: "${dir.replace(/\\/g, '/')}".`);
+	if ((_pathinfo(dir)?.type ?? 0) < 2) throw new Error(`List directory path not found: "${dir.replace(/\\/g, '/')}".`);
 	if (![0, 1, 2].includes(mode)) mode = 0;
 	recursive = !!recursive;
 	const items = await Fs.promises.readdir(dir, {withFileTypes: true});
@@ -151,7 +240,7 @@ export const _lsDir = async (dir: string, mode: number = 0, recursive: boolean =
  * @returns `number` Total lines read
  */
 export const _readLines = async (file: string, handler: (lineContent: string, lineNumber?: number)=>any): Promise<number> => {
-	if (_filetype(file) !== 1) throw new Error(`Read lines file path not found: "${file.replace(/\\/g, '/')}".`);
+	if ((_pathinfo(file)?.type ?? 0) !== 1) throw new Error(`Read lines file path not found: "${file.replace(/\\/g, '/')}".`);
 	const fileStream = Fs.createReadStream(file);
 	const rl = Readline.createInterface({input: fileStream, crlfDelay: Infinity});
 	let n: number = 0;
@@ -173,7 +262,7 @@ export const _readLines = async (file: string, handler: (lineContent: string, li
  */
 export const _readSync = <T extends any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined): T => {
 	try {
-		if (_filetype(path) !== 1) throw new Error(`Invalid read file path. (${path})`);
+		if ((_pathinfo(path)?.type ?? 0) !== 1) throw new Error(`Invalid read file path. (${path})`);
 		const buffer: any = Fs.readFileSync(path);
 		if (!parse) return buffer;
 		const content: any = buffer.toString();
@@ -260,15 +349,11 @@ export const _processArgs = (): {[key: string]: string|boolean} => {
  */
 export const _removeDir = (path: string, recursive: boolean = false): number => {
 	try {
-		let force: boolean = true;
-		const type = _filetype(path = path.trim());
-		if (type < 2) return -1;
-		if (type === 3){
-			recursive = false;
-			force = false;
-		}
-		Fs.rmSync(path, {recursive, force});
-		return 1;
+		const info = _pathinfo(path, 2);
+		if (!(info && info.isDirectory)) return -1;
+		if (info.isSymbolicLink) Fs.unlinkSync(info.path_full);
+		else Fs.rmSync(info.path_full, {recursive, force: true});
+		return _exists(info.path_full) ? 0 : 1;
 	}
 	catch (e){
 		console.warn('[W] _removeDir:', e);
@@ -284,32 +369,14 @@ export const _removeDir = (path: string, recursive: boolean = false): number => 
  */
 export const _removeFile = (path: string): number => {
 	try {
-		if (_filetype(path = path.trim()) !== 1) return -1;
-		Fs.unlinkSync(path);
-		return 1;
+		const info = _pathinfo(path, 2);
+		if (!(info && (info.isFile || info.isSymbolicLink))) return -1;
+		Fs.unlinkSync(info.path_full);
+		return _exists(info.path_full) ? 0 : 1;
 	}
 	catch (e){
 		console.warn('[W] _removeFile:', e);
 		return 0;
-	}
-};
-
-/**
- * Get symbolic link target path
- * 
- * @param path - link path
- * @returns `string|undefined`
- */
-export const _linkTarget = (path: string): string => {
-	try {
-		if (_filetype(path) !== 3) return '';
-		const target: string = Fs.readlinkSync(path);
-		if (!('string' === typeof target && target.trim())) throw new TypeError('Empty read link result.');
-		return target;
-	}
-	catch (e){
-		console.warn(`Read link "${path}" failure; ${e}`);
-		return '';
 	}
 };
 
@@ -330,11 +397,10 @@ export const _hashes = (): string[] => Crypto.getHashes();
  */
 export const _hashFile = async (path: string, algo: string = 'sha256'): Promise<string> => {
 	if (!_exists(path)) return '';
-	const file = _realpath(path);
-	const file_type = _filetype(file);
-	if (!(file && file_type === 1)) throw new TypeError(`Hash file path is invalid. (${path})`);
-  const hash = Crypto.createHash(algo);
-  const stream = Fs.createReadStream(path);
+	const info = _pathinfo(path);
+	if (!(info && info.type === 1)) throw new TypeError(`Hash file path is invalid. (${path})`);
+	const hash = Crypto.createHash(algo);
+  const stream = Fs.createReadStream(info.path_full);
   const complete: boolean = await (new Promise((resolve, reject) => {
     stream.on('data', (data) => hash.update(data));
     stream.on('close', resolve);
@@ -347,4 +413,73 @@ export const _hashFile = async (path: string, algo: string = 'sha256'): Promise<
 	});
 	if (!complete) return '';
 	return hash.digest('hex');
+};
+
+/**
+ * Copy file with progress
+ * 
+ * @param from_path - copy file source 
+ * @param to_path  - copy file destination
+ * @param overwrite - whether to overwrite existing
+ * @returns `Promise<any>`
+ */
+export const _copyFile = async (from_path: string, to_path: string, overwrite: boolean = false): Promise<any> => {
+	const from_info = _pathinfo(from_path);
+	if (!from_info){
+		const error = 'Copy file from path does not exist.';
+		console.warn(error, {from_path, to_path});
+		return Promise.reject(error);
+	}
+	if (!from_info.isFile){
+		const error = 'Copy file from path is not a file.';
+		console.warn(error, {from_path, to_path, from_info});
+		return Promise.reject(error);
+	}
+	let to_info: IPathInfo|undefined = _pathinfo(to_path);
+	if (to_info && to_info.isDirectory){
+		let filename = _filename(from_info.path_full);
+		if (!filename){
+			const error = 'Failed to get copy from file name.';
+			console.warn(error, {from_path, to_path, from_info});
+			return Promise.reject(error);
+		}
+		to_info = _pathinfo(to_path = to_info.path_full.replace(/\\/g, '/') + '/' + filename);
+	}
+	if (to_info){
+		if (to_info.isFile){
+			if (!overwrite){
+				const error = `Copy file already exists and overwrite is disabled. (${to_info.path_full})`;
+				console.warn(error, {from_path, to_path, from_info, to_info});
+				return Promise.reject(error);
+			}
+			const removed = _removeFile(to_info.path_full);
+			if (removed !== 1){
+				const error = `Copy file overwrite existing file remove failed! (${to_info.path_full} => ${removed})`;
+				console.warn(error, {from_path, to_path, from_info, to_info});
+				return Promise.reject(error);
+			}
+		}
+		else {
+			const error = `Copy file to unsupported existing path type! (${to_info.path_full} => ${to_info.type})`;
+			console.warn(error, {from_path, to_path, from_info, to_info});
+			return Promise.reject(error);
+		}
+		to_path = to_info.path_full;
+	}
+	_mkdir(_dirname(to_path));
+	return new Promise((resolve, reject) => {
+		const filesize = from_info.size;
+		let bytesCopied = 0
+		console.time('copying')
+		const readStream = Fs.createReadStream(from_info.path_full);
+		readStream.on('data', function(buffer){
+			bytesCopied += buffer.length
+			const precent = ((bytesCopied/filesize)*100).toFixed(2);
+			console.log(`--- copy progress: ${precent} %`);
+		});
+		readStream.on('end', function(){
+			console.timeEnd('copying');
+		})
+		readStream.pipe(Fs.createWriteStream(to_path));
+	});
 };
