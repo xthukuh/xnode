@@ -110,13 +110,14 @@ export const _int = (value: any, _default: number = NaN): number => {
  * @param value - parse number value
  * @param min - set min limit ~ enabled when `min` is a valid positive number
  * @param max - set max limit ~ enabled when `max` is a valid positive number
+ * @param _limit_default - (default: `false`) use min/max value when value goes beyond limit (e.g. `_posInt(150,0,100,true)` => `100`)
  * @returns `number` positive | `undefined` when invalid or out of `min/max` bounds
  */
-export const _posInt = (value: any, min?: number, max?: number): number|undefined => {
+export const _posInt = (value: any, min?: number, max?: number, _limit_default: boolean = false): number|undefined => {
 	const val = _int(value);
 	if (!(!isNaN(val) && val >= 0)) return undefined;
-	if ('number' === typeof min && !isNaN(min) && min >= 0 && val < min) return undefined;
-	if ('number' === typeof max && !isNaN(max) && max >= 0 && val > max) return undefined;
+	if ('number' === typeof min && !isNaN(min) && min >= 0 && val < min) return _limit_default ? min : undefined;
+	if ('number' === typeof max && !isNaN(max) && max >= 0 && val > max) return _limit_default ? max : undefined;
 	return val;
 };
 

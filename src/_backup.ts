@@ -1,7 +1,7 @@
 import { _parseIgnore } from './_parse_ignore';
-import { _dirPath, _normSep, _print } from './__utils';
-import { IPathInfo, _exists,  _hashFile, _hashes, _mkdir, _pathinfo, _processArgs } from './xfs';
-import { Term, _asyncQueue, _basename, _batchValues, _errorText, _filepath, _jsonStringify, _str } from './xutils';
+import { ProgTerm, _dirPath, _normSep, _print } from './__utils';
+import { IPathInfo, _exists,  _hashFile, _hashes, _renamePath, _mkdir, _pathinfo, _processArgs, _copyFile } from './xfs';
+import { Term, _asyncQueue, _basename, _batchValues, _bytesText, _errorText, _filepath, _jsonStringify, _str } from './xutils';
 
 //Backup
 export const _run_backup = async (): Promise<any> => {
@@ -47,53 +47,92 @@ export const _run_backup = async (): Promise<any> => {
 	
 			//-- calculate file changes
 			Term.log('>> calculating files...');
-			const items: {[key: string]: any}[] = [];
+			let count: number = 0;
+			let copy_size: number = 0;
+			let copy_files: number = 0;
+			const logger = new ProgTerm();
+			const entries: [string,string][] = [];
 			await _asyncQueue(paths, 20, async (path, i, len) => {
+				count ++;
+				const percent = count/len * 100;
+				logger.set(percent, `calculating ${len} items...`);
 				const from: string = source_dir + '/' + path;
-				const to: string = dest_dir + '/' + path;
-				const from_type: number = (_pathinfo(from)?.type ?? 0);
-				let to_type: number = 0;
-				let skip: boolean = false;
-				let skip_reason: string = '';
-				let exists: boolean = false;
-				if (!!(exists = _exists(to))){
-					to_type = (_pathinfo(to)?.type ?? 0);
-					if (from_type >= 2 && to_type >= 2){
-						skip = true;
-						skip_reason = 'subfolder';
+				let to: string = dest_dir + '/' + path;
+				const from_info: IPathInfo|undefined = _pathinfo(from);
+				if (!from_info){
+					logger.error(`Failed to get backup source path info! (${from})`);
+					return;
+				}
+				let to_info: IPathInfo|undefined = _pathinfo(to);
+				if (to_info){
+					if (from_info.type !== to_info.type){
+						let error = `source-destination type mismatch! ("${path}" => ${from_info.type} <> ${to_info.type})`;
+						if (from_info.type === 2){
+							logger.error('SKIPPED - Existing directory ' + error);
+							return;
+						}
+						const to_renamed: string = _renamePath(to);
+						error = 'RENAMED - Existing file ' + error + `\n-- "${to}" => "${to_renamed}"`;
+						logger.warn(error);
+						to = to_renamed;
+						to_info = undefined;
 					}
-					else if (from_type !== to_type){
-						skip = true;
-						skip_reason = `mismatch ${from_type + ' => ' + to_type}`;
-					}
-					else if (from_type === 1){
-						Term.debug(`>> calc [${i + 1}/${len}] "${from}" (${from_type})`);
-						Term.debug(`   => "${to}" (${to_type})...`);
+					else if (from_info.type === 1){
+						logger.debug(`Calculating sha256 hashes... (${path})`);
 						const from_hash = await _hashFile(from, 'sha256');
 						const to_hash = await _hashFile(to, 'sha256');
-						Term.debug(`   [from_hash] "${from_hash}"`);
-						Term.debug(`   [to_hash]   "${to_hash}"`);
-						const same = from_hash === to_hash;
-						Term[same ? 'debug': 'log'](`  [same]       ${same}`);
-						if (same){
-							skip = true;
-							skip_reason = 'unchanged';
+						if (from_hash === to_hash){
+							logger.debug('SKIPPED - file unchanged');
+							return;
 						}
+						logger.debug(`++ CHANGED - file "${path}" (${_bytesText(from_info.size)})`);
+					}
+					else if (from_info.type === 2){
+						logger.debug('SKIPPED - directory exists');
+						return;
 					}
 				}
-				items[i] = {
-					index: i,
-					from,
-					from_type,
-					to,
-					to_type,
-					skip,
-					skip_reason,
-					exists,
-				};
+				if (!to_info) logger.debug(`++ ADDED - ${from_info.type === 1 ? 'file' : 'directory'} "${path}"${from_info.type === 1 ? ' (' + _bytesText(from_info.size, 2) + ')' : ''}`);
+				if (from_info && from_info.type === 1){
+					copy_size += from_info.size;
+					copy_files ++
+				}
+				entries.push([from, to]);
 			});
-			Term.info('<< debug backup items:');
-			Term.log(_jsonStringify(items, 2));
+			logger
+			.set(0, 'Copying...')
+			.info(`>> backup copy... (${entries.length} entries, ${copy_files} files ${_bytesText(copy_size)})`);
+			count = 0;
+			let buffer_size: number = 0;
+			await _asyncQueue(entries, 20, async (entry, i, len) => {
+				const [copy_from, copy_to] = entry;
+				count ++;
+				const percent = (((count/len) + (buffer_size/copy_size))/2 * 100);
+				logger
+				.set(percent, `Coping ${count}/${len} - ${_bytesText(buffer_size)}/${_bytesText(copy_size)}`)
+				.debug(`>> Copy "${copy_from}" => "${copy_to}"`);
+				const from_info: IPathInfo|undefined = _pathinfo(copy_from);
+				if (!from_info){
+					logger.error(`Failed to get copy from path info! (${copy_from})`);
+					return;
+				}
+				if (from_info.type === 1){
+					await _copyFile(copy_from, copy_to, true, (copy_percent, copied_size, total_size) => {
+						buffer_size += copied_size;
+						if (!(Math.floor(copy_percent) % 5)){
+							const percent = (((count/len) + (buffer_size/copy_size))/2 * 100);
+							const label = `Coping ${count}/${len} - ${_bytesText(buffer_size)}/${_bytesText(copy_size)}`;
+							logger.set(percent, label);
+							if (count + 1 === len) logger.debug(`-- "${copy_from}" => "${copy_to}" ${copy_percent}% - ${copied_size}/${total_size}`);
+							else logger.print();
+						}
+					})
+					.catch(err => {
+						logger.set(undefined, undefined, 'warn').warn(err);
+					});
+				}
+				else _mkdir(copy_to);
+			});
 		}
 		catch (e: any){
 			throw e;

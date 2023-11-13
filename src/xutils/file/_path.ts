@@ -1,4 +1,4 @@
-import { _jsonStringify, _split, _str } from '../utils';
+import { _commas, _jsonStringify, _posInt, _round, _split, _str } from '../utils';
 
 /**
  * Basename (stringable) object interface
@@ -342,4 +342,19 @@ export const _filepath = (value: any, separator?: ''|'/'|'\\', _strict: boolean 
 		}
 		return item; //<< result - IFilePath (failed)
 	}
+};
+
+/**
+ * Format bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` text
+ * 
+ * @param bytes - parse bytes
+ * @param places - decimal places
+ * @param commas - use thousand comma separator
+ * @returns `string`
+ */
+export const _bytesText = (bytes: number, places: number = 2, commas: boolean = false): string => {
+	if (!(bytes = _posInt(bytes, 0) ?? 0)) return '0 B';
+	const kb: number = 1024, labels = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+	const i = Math.floor(Math.log(bytes)/Math.log(kb)), label = labels[i], size = bytes/Math.pow(kb, i);
+	return (commas ? _commas(size, places) : _round(size, places)) + ' ' + label;
 };

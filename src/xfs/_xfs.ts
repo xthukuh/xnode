@@ -2,7 +2,7 @@ import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
 import * as Crypto from 'crypto';
-import { Term, _errorText, _getAllProperties, _jsonParse, _posInt } from '../xutils';
+import { Term, _errorText, _filepath, _getAllProperties, _jsonParse, _posInt, _round, _str } from '../xutils';
 
 
 /**
@@ -416,6 +416,29 @@ export const _hashFile = async (path: string, algo: string = 'sha256'): Promise<
 };
 
 /**
+ * Rename existing file path
+ * 
+ * @param path - file path
+ * @param dupes - allow duplicates (default: `false` ~ appends number)
+ * @param prefix - basename prefix text
+ * @param append - basename append text
+ * @returns `string` ~ renamed path
+ */
+export const _renamePath = (path: string, dupes: boolean = false, prefix: string = '', append: string = ''): string => {
+	const {dir, name, ext} = _filepath(path, '/');
+	const file_ext = (ext ? '.' + ext : '');
+	const file_name = _str(prefix, true) + name + _str(append, true);
+	let val: string = dir + '/' + file_name + file_ext;
+	if (dupes) return val;
+	let num: number = 0;
+	while (_exists(val)){
+		num ++;
+		val = dir + '/' + file_name + '-' + num + file_ext;
+	}
+	return val;
+};
+
+/**
  * Copy file with progress
  * 
  * @param from_path - copy file source 
@@ -423,7 +446,7 @@ export const _hashFile = async (path: string, algo: string = 'sha256'): Promise<
  * @param overwrite - whether to overwrite existing
  * @returns `Promise<any>`
  */
-export const _copyFile = async (from_path: string, to_path: string, overwrite: boolean = false): Promise<any> => {
+export const _copyFile = async (from_path: string, to_path: string, overwrite: boolean = false, onProgress?: (percent:number,copied_size:number,total_size:number)=>void): Promise<any> => {
 	const from_info = _pathinfo(from_path);
 	if (!from_info){
 		const error = 'Copy file from path does not exist.';
@@ -437,49 +460,81 @@ export const _copyFile = async (from_path: string, to_path: string, overwrite: b
 	}
 	let to_info: IPathInfo|undefined = _pathinfo(to_path);
 	if (to_info && to_info.isDirectory){
-		let filename = _filename(from_info.path_full);
-		if (!filename){
+		const from_filename = _filename(from_info.path_full);
+		if (!from_filename){
 			const error = 'Failed to get copy from file name.';
 			console.warn(error, {from_path, to_path, from_info});
 			return Promise.reject(error);
 		}
-		to_info = _pathinfo(to_path = to_info.path_full.replace(/\\/g, '/') + '/' + filename);
+		const to_filename = _filename(to_info.path_full);
+		if (!to_filename){
+			const error = 'Failed to get copy to file name.';
+			console.warn(error, {from_path, to_path, from_info});
+			return Promise.reject(error);
+		}
+		if (from_filename === to_filename){
+			const error = 'Copy file destination exists as a directory.';
+			console.warn(error, {from_path, to_path, from_info});
+			return Promise.reject(error);
+		}
+		to_info = _pathinfo(to_path = to_info.path_full + '/' + from_filename);
 	}
 	if (to_info){
-		if (to_info.isFile){
-			if (!overwrite){
-				const error = `Copy file already exists and overwrite is disabled. (${to_info.path_full})`;
-				console.warn(error, {from_path, to_path, from_info, to_info});
-				return Promise.reject(error);
-			}
-			const removed = _removeFile(to_info.path_full);
-			if (removed !== 1){
-				const error = `Copy file overwrite existing file remove failed! (${to_info.path_full} => ${removed})`;
-				console.warn(error, {from_path, to_path, from_info, to_info});
-				return Promise.reject(error);
-			}
-		}
-		else {
-			const error = `Copy file to unsupported existing path type! (${to_info.path_full} => ${to_info.type})`;
+		if (!to_info.isFile){
+			const error = `Copy file exists with unsupported type! [${to_info.type}] "${to_info.path_full}"`;
 			console.warn(error, {from_path, to_path, from_info, to_info});
 			return Promise.reject(error);
 		}
 		to_path = to_info.path_full;
+		if (!overwrite){
+			to_path = _renamePath(to_path);
+			to_info = undefined;
+		}
 	}
 	_mkdir(_dirname(to_path));
-	return new Promise((resolve, reject) => {
-		const filesize = from_info.size;
-		let bytesCopied = 0
-		console.time('copying')
-		const readStream = Fs.createReadStream(from_info.path_full);
-		readStream.on('data', function(buffer){
-			bytesCopied += buffer.length
-			const precent = ((bytesCopied/filesize)*100).toFixed(2);
-			console.log(`--- copy progress: ${precent} %`);
+	const temp: string = to_path + '.copytemp';
+	if (!_removeFile(temp)){
+		const error = `Failed to remove copy temp file! "${temp}"`;
+		console.warn(error, {from_path, to_path, from_info, to_info});
+		return Promise.reject(error);
+	}
+	let done: number = 0;
+	let copied_size: number = 0;
+	let total_size: number = from_info.size;
+	const _onProgress: ((percent:number,copied_size:number,total_size:number)=>void)|undefined = 'function' === typeof onProgress ? onProgress : undefined;
+	const _update = (bytes: number): void => {
+		copied_size += bytes;
+		const percent: number = _round(copied_size/total_size * 100, 2);
+		if (_onProgress) _onProgress(percent, copied_size, total_size);
+	};
+	return (async () => {
+		return new Promise((resolve: (value?: any)=>void, reject: (error?: any)=>void) => {
+			const _done = (error?: any) => {
+				if (done) return;
+				done = 1;
+				if (error) reject(error);
+				resolve();
+			};
+			_update(0);
+			const stream = Fs.createReadStream(from_info.path_full);
+			stream.on('error', function(error: any){
+				_done('Copy error! ' + _errorText(error));
+			});
+			stream.on('data', function(buffer){
+				_update(buffer.length);
+			});
+			stream.on('end', function(){
+				_done();
+			});
+			stream.pipe(Fs.createWriteStream(temp));
 		});
-		readStream.on('end', function(){
-			console.timeEnd('copying');
-		})
-		readStream.pipe(Fs.createWriteStream(to_path));
+	})()
+	.then(async () => {
+		if (!_removeFile(to_path)){
+			const error = `Failed to remove copy overwrite file! "${to_path}"`;
+			console.warn(error, {from_path, to_path, from_info, to_info});
+			return Promise.reject(error);
+		}
+		Fs.renameSync(temp, to_path);
 	});
 };

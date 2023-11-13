@@ -1,6 +1,6 @@
 import { _clone } from './_clone';
 import { _posInt } from './_number';
-import { _values } from './_objects';
+import { _arrayList } from './_objects';
 import { _errorText, _str } from './_string';
 
 /**
@@ -32,7 +32,7 @@ export const _asyncAll = async<T = any, TResult = any>(values: T[], callback?: (
 		//-- queue promise
 		let complete = 0, failures = 0;
 		interface IQueueItem {index: number; value: T;}
-		const queue: IQueueItem[] = _values(values).map((value, index) => ({index, value}));
+		const queue: IQueueItem[] = _arrayList(values).map((value, index) => ({index, value}));
 		const length = queue.length;
 		const results: IPromiseResult<TResult>[] = [];
 		const _resolve = (): void => void setTimeout(() => resolve(results), 0);
@@ -98,7 +98,7 @@ export const _asyncQueue = async <T = any, TResult = any>(values: T[], size: num
 		
 		//-- queue promise
 		interface IQueueItem {index: number; value: T;}
-		const queue: IQueueItem[] = _values(values).map((value, index) => ({index, value}));
+		const queue: IQueueItem[] = _arrayList(values).map((value, index) => ({index, value}));
 		const length = queue.length;
 		let pending = 0, complete = 0, failures = 0;
 
