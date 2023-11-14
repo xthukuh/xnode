@@ -46,6 +46,8 @@ export const _run_test = async (): Promise<any> => {
 
 	// npm run dev -- --backup="C:\Users\user\Downloads\test" --to="C:\Users\user\Desktop\Tests"
 	// npm run dev -- --backup="C:\Users\user\apps\react\xutils\lib" --to="C:\Users\user\apps\react\TrueBlue-MESPT\src\xutils"
+	// node "C:\Users\user\apps\react\xparse-ignore\dist" -- --backup="C:\Users\user\apps\react\xutils\lib" --to="C:\Users\user\apps\react\TrueBlue-MESPT\src\xutils"
+	// xparse-ignore -- --backup="C:\Users\user\apps\react\xutils\lib" --to="C:\Users\user\apps\react\TrueBlue-MESPT\src\xutils"
 	
 	
 	//..

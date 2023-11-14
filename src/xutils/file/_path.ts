@@ -345,6 +345,23 @@ export const _filepath = (value: any, separator?: ''|'/'|'\\', _strict: boolean 
 };
 
 /**
+ * Convert bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` value
+ * 
+ * @param bytes - parse bytes
+ * @param mode - parse mode ~ `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'`
+ * @param places - decimal places
+ * @returns `number`
+ */
+export const _bytesValue = (bytes: number, mode: 'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB' = 'B', places: number = 2): number => {
+	if (!(bytes = _posInt(bytes, 0) ?? 0)) return 0;
+	const modes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+	let i: number = modes.findIndex(v => v.toLowerCase() === mode.toLowerCase());
+	if (i < 0) return bytes;
+	const size: number = bytes/Math.pow(1024, i);
+	return _round(size, places);
+};
+
+/**
  * Format bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` text
  * 
  * @param bytes - parse bytes

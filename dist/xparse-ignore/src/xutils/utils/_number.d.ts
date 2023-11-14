@@ -43,9 +43,10 @@ export declare const _int: (value: any, _default?: number) => number;
  * @param value - parse number value
  * @param min - set min limit ~ enabled when `min` is a valid positive number
  * @param max - set max limit ~ enabled when `max` is a valid positive number
+ * @param _limit_default - (default: `false`) use min/max value when value goes beyond limit (e.g. `_posInt(150,0,100,true)` => `100`)
  * @returns `number` positive | `undefined` when invalid or out of `min/max` bounds
  */
-export declare const _posInt: (value: any, min?: number, max?: number) => number | undefined;
+export declare const _posInt: (value: any, min?: number, max?: number, _limit_default?: boolean) => number | undefined;
 /**
  * Round number to decimal places
  *

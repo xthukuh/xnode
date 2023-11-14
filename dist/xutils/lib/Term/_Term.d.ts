@@ -73,6 +73,10 @@ export declare class Term {
      */
     static get text(): (value: string, formats?: string | string[]) => string;
     /**
+     * Log empty line ~ `console.log(' ')`
+     */
+    static br(): void;
+    /**
      * Log `console.log` format
      *
      * @param args

@@ -8,14 +8,25 @@ export interface IPromiseResult<TResult> {
     reason?: any;
 }
 /**
- * Parallel resolve `array` values callback promises
+ * Parallel resolve list items `<T=any>[]`
  * - i.e. await _asyncAll<number, number>([1, 2], async (num) => num * 2) --> [{status: 'resolved', index: 0, value: 2}, {status: 'resolved', index: 1, value: 4}]
  *
- * @param array  Entries
- * @param callback  Entry callback
+ * @param values - queue values
+ * @param callback - queue resolve value callback ~ `(value:T,index:number,length:number)=>Promise<TResult=any>`
+ * @param onProgress - queue on progress callback ~ `(percent:number,total:number,complete:number,failures:number)=>void`
  * @returns `Promise<IPromiseResult<TResult>[]>`
  */
-export declare const _asyncAll: <T = any, TResult = any>(array: T[], callback?: ((value: T, index: number, length: number) => Promise<TResult>) | undefined) => Promise<IPromiseResult<TResult>[]>;
+export declare const _asyncAll: <T = any, TResult = any>(values: T[], callback?: ((value: T, index: number, length: number) => Promise<TResult>) | undefined, onProgress?: ((percent: number, total: number, complete: number, failures: number) => void) | undefined) => Promise<IPromiseResult<TResult>[]>;
+/**
+ * Parallel resolve list items `<T=any>[]` with max simultaneous promises size limit
+ *
+ * @param values - queue values
+ * @param size - max simultaneous promises size (default: `0` ~ unlimited)
+ * @param callback - queue resolve value callback ~ `(value:T,index:number,length:number)=>Promise<TResult=any>`
+ * @param onProgress - queue on progress callback ~ `(percent:number,total:number,complete:number,failures:number)=>void`
+ * @returns `Promise<IPromiseResult<TResult>[]>`
+ */
+export declare const _asyncQueue: <T = any, TResult = any>(values: T[], size?: number, callback?: ((value: T, index: number, length: number) => Promise<TResult>) | undefined, onProgress?: ((percent: number, total: number, complete: number, failures: number) => void) | undefined) => Promise<IPromiseResult<TResult>[]>;
 /**
  * Get async iterable values (i.e. `for await (const value of _asyncValues(array)){...}`)
  *

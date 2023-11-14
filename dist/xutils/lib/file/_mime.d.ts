@@ -37,18 +37,12 @@ export interface IMimeType {
     prop?: 'type' | 'ext' | 'error') => string;
 }
 /**
- * Basename error interface
- */
-export interface IMimeTypeError extends Error {
-    name: string;
-    item: IMimeType;
-}
-/**
- * Get normalized file mime type (i.e. 'application/json; charset=utf-8' => 'application/json')
+ * Parse file mime type
  *
- * @param  string	$value	- Parse value (mime|ext|file-path)
- * @param  string	$ext		- ByRef file extension (i.e. 'txt', 'png')
- * @param  string	$error	- ByRef error message
- * @return string|false
+ * @example String(_mime('application/json; charset=utf-8')) => 'application/json'
+ *
+ * @param value - parse mime type
+ * @param _failure - `FailError` mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
+ * @returns `IMimeType` stringable mime type object
  */
-export declare const _mime: (value: any, _failure?: 0 | 1 | 2) => IMimeType;
+export declare const _mime: (value: any, _failure?: 0 | 1 | 2 | 3) => IMimeType;

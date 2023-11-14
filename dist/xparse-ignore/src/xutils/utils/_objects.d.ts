@@ -22,28 +22,28 @@ export declare const _getAllProperties: (value: any, statics?: boolean) => (stri
 /**
  * Check if value has property
  *
- * @param value  Search `object` value
- * @param prop  Find property
+ * @param value - parse `object` value
+ * @param prop - property name
  * @param own  [default: `false`] As own property
- *
+ * @returns `boolean`
  */
 export declare const _hasProp: (value: any, prop: any, own?: bool) => boolean;
 /**
  * Check if object has properties
  *
- * @param value  Search `object` value
- * @param props  Spread find properties
- *
+ * @param value - parse `object` value
+ * @param props - property names
+ * @returns `boolean`
  */
-export declare const _hasProps: (value: any, ...props: any) => boolean;
+export declare const _hasProps: (value: any, ...props: any[]) => boolean;
 /**
  * Check if object has any of the properties
  *
- * @param value  Search `object` value
- * @param props  Spread find properties
- *
+ * @param value - parse `object` value
+ * @param props - property names
+ * @returns `false|any[]`
  */
-export declare const _hasAnyProps: (value: any, ...props: any) => boolean;
+export declare const _hasAnyProps: (value: any, ...props: any[]) => false | any[];
 /**
  * Property interface ~ see `_getProp()`
  */
@@ -61,9 +61,12 @@ export interface IProperty {
      */
     value: any;
     /**
-     * - property exists state ~ `0` = not found, `1` = own property, `2` = not own property
+     * - property exists state
+     * - `0` = not found
+     * - `1` = own property
+     * - `2` = not own property
      */
-    exists: 0 | 1 | 2;
+    exists: 0 | 1 | 2 | false;
 }
 /**
  * Get value property
@@ -78,14 +81,15 @@ export declare const _getProp: (value: any, match: any, ignoreCase?: bool) => IP
 /**
  * Check if value is a class function
  *
- * @param value  Test value
+ * @param value - parse value
  */
 export declare const _isClass: (value: any) => boolean;
 /**
- * Check if value is a function (or class optionally)
+ * Check if value is a `function`
  *
- * @param value  Test value
- * @param orClass  [default: `false`] Includes class function
+ * @param value - parse value
+ * @param orClass - (default: `false`) include `class` objects
+ * @returns `boolean`
  */
 export declare const _isFunc: (value: any, orClass?: boolean) => boolean;
 /**
@@ -93,23 +97,29 @@ export declare const _isFunc: (value: any, orClass?: boolean) => boolean;
  * - Example: `_minMax(20, 10)` => `[10, 20]`
  * - Example: `_minMax(0.23, null)` => `[null, 0.23]`
  *
- * @param a  Compare value 1
- * @param b  Compare value 2
+ * @param a - first value
+ * @param b - second value
  * @returns `[min, max]`
  */
 export declare const _minMax: (a: any, b: any) => [min: any, max: any];
 /**
- * Flatten object values recursively to dot paths (i.e. `{a:{x:1},b:{y:2,z:[5,6]}}` => `{'a.x':1,'b.y':2,'b.z.0':5,'b.z.1':6}`)
+ * Flatten `object` values recursively to dot paths
  *
- * @param value  Parse object
- * @param omit  Omit entry keys/dot paths
+ * @example
+ * _dotFlat({a:{x:1},b:{y:2,z:[5,6]}}) //{'a.x':1,'b.y':2,'b.z.0':5,'b.z.1':6}
+ *
+ * @param value - parse `object` value
+ * @param omit - omit entry keys/dot paths
  * @returns `{[key: string]: any}`
  */
 export declare const _dotFlat: (value: any, omit?: string[]) => {
     [key: string]: any;
 };
 /**
- * Parse dot flattened object to [key => value] object ~ reverse `_dotFlat()`
+ * Unflatten dot flattened `object` ~ reverse of `_dotFlat`
+ *
+ * @example
+ * _dotInflate({'a.x':1,'b.y':2,'b.z.0':5,'b.z.1':6}) //{a:{x:1},b:{y:2,z:[5,6]}}
  *
  * @param value - parse value ~ `{[dot_path: string]: any}`
  * @returns `{[key: string]: any}` parsed result | `{}` when value is invalid
@@ -122,10 +132,10 @@ export declare const _dotInflate: (value: any) => {
  *
  * @param dot_path - dot separated keys
  * @param operations - supports operations (i.e. '!reverse'/'!slice=0') ~ tests dot keys using `/^[-_0-9a-zA-Z]+\=([^\=\.]*)$/` instead of default `/^[-_0-9a-zA-Z]+$/`
- * @param _failure - error handling ~ `0` = (default) disabled, '1' = warn error, `2` = warn and throw error
+ * @param _failure - `FailError` mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
  * @returns `string` valid dot path
  */
-export declare const _validDotPath: (dot_path: string, operations?: boolean, _failure?: 0 | 1 | 2) => string;
+export declare const _validDotPath: (dot_path: string, operations?: boolean, _failure?: 0 | 1 | 2 | 3) => string;
 /**
  * Get parsed `boolean` value
  *
@@ -165,11 +175,11 @@ export declare const _bool: (value: any, strict?: boolean, trim?: boolean) => bo
  * @param path - dot separated keys ~ optional array operations
  * @param target - traverse object
  * @param ignoreCase - whether to ignore case when matching keys (default: `false`)
- * @param _failure - error handling ~ `0` = (default) disabled, `1` = warn error, `2` = throw error
+ * @param _failure - `FailError` mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
  * @param _default - default result on failure
  * @returns `any` dot path match result
  */
-export declare const _dotGet: (path: string, target: any, ignoreCase?: boolean, _failure?: 0 | 1 | 2, _default?: any) => any;
+export declare const _dotGet: (path: string, target: any, ignoreCase?: boolean, _failure?: 0 | 1 | 2 | 3, _default?: any) => any;
 /**
  * @deprecated
  * Get coerced `number/string/JSON` value ~ `value.valueOf()`
@@ -194,6 +204,26 @@ export declare const _empty: (value: any, trim?: boolean) => boolean;
  * @returns `boolean`
  */
 export declare const _iterable: (value: any, _async?: boolean) => boolean;
+/**
+ * Validate `Object` value
+ *
+ * @param value - parse value
+ * @param _filled - must not be empty `{}`
+ * @returns `boolean`
+ */
+export declare const _isObject: (value: any, _filled?: boolean) => boolean;
+/**
+ * Validate values iterable array list
+ *
+ * @param value - parse value
+ * @param _mode - parse mode
+ * - `0` = (default) `[Symbol.iterator].name` is 'values'|'[Symbol.iterator]'
+ * - `1` = `Array.isArray`
+ * - `2` = is iterable `[Symbol.iterator]`
+ * @param _filled - must not be empty `[]`
+ * @returns `boolean`
+ */
+export declare const _isArray: (value: any, _filled?: boolean, _mode?: 0 | 1 | 2) => boolean;
 /**
  * Object array values
  *
@@ -251,3 +281,71 @@ export declare const _sortValues: <T = any>(array: T[], sort?: 1 | -1 | "asc" | 
 export declare const _trans: (template: string, context: {
     [name: string]: any;
 }, _default?: string, _format?: ((value: string, path: string, name: string) => any) | undefined) => string;
+/**
+ * Parse iterable values array list
+ *
+ * @param values - parse values
+ * @returns `T[]` array list
+ */
+export declare const _arrayList: <T = any>(values: any) => T[];
+/**
+ * Map values (`object[]`) by key property ID value
+ * - ID value is a trimmed `string` (lowercase when argument `_lowercase` is `true`)
+ *
+ * @param values - parse values array ~ `<T = any>[]`
+ * @param prop - ID property name (default: `''` ~ uses `string` entry value as ID for scalar values array)
+ * @param _lowercase - (default: `false`) use lowercase ID value for uniform ID value case
+ * @param _texts - (default: `0`) parse text entry mode ~ **enabled when `prop` argument is blank**
+ * - `0` => disabled
+ * - `1` => trim text values
+ * - `2` => stringify and trim text values
+ * @param _silent - (default: `true`) do not log warnings when values entry with invalid ID is skipped
+ * @returns `{[id: string]: T}` object with {ID=entry} mapping
+ */
+export declare const _mapValues: <T = any>(values: T[], prop?: string, _lowercase?: boolean, _texts?: 0 | 1 | 2, _silent?: boolean) => {
+    [id: string]: T;
+};
+/**
+ * @class `FailError` _extends `Error`_
+ */
+export declare class FailError extends Error {
+    /**
+     * - error message
+     */
+    message: string;
+    /**
+     * - error mode
+     */
+    mode: 0 | 1 | 2 | 3;
+    /**
+     * - error debug
+     */
+    debug: any;
+    /**
+     * - error name
+     */
+    name: string;
+    /**
+     * Failure error instance/handler
+     *
+     * @param reason - parse error message
+     * @param mode - error mode ~ `0` = silent (default) | `1` = logs warning | `2` = logs error | `3` = throws error
+     * @param debug - error debug
+     * @param name - error name
+     */
+    constructor(reason: any, mode?: 0 | 1 | 2 | 3, debug?: any, name?: string);
+}
+/**
+ * Extract `object` value property entries
+ *
+ * @param value - parse `object` value
+ * @param props - extract property names
+ * @param _omit - (default: `false`) **exclude** property names extract mode
+ * @param _undefined - (default: `false`) include `undefined` property names
+ * @returns `{[prop: any]: any}`
+ */
+export declare const _propsObj: (value: any, props?: any[], _omit?: boolean, _undefined?: boolean) => {
+    [key: string]: any;
+    [key: number]: any;
+    [key: symbol]: any;
+};

@@ -172,37 +172,40 @@ export declare const _toLowerCase: (value: any) => string;
  */
 export declare const _toUpperCase: (value: any) => string;
 /**
- * Get string buffer unique hash code
+ * Parse text value hash code
  *
  * @example
  * _hashCode('Hello world!') => -52966915
+ * _hashCode('Hello') => 69609650
  *
- * @param buffer  Parse string value
- * @returns `number` hash
+ * @param value - parse text value
+ * @returns `number` ~ hash code | `0` when blank
  */
-export declare const _hashCode: (buffer: any) => number;
+export declare const _hashCode: (value: any) => number;
 /**
- * Get string buffer unique hash code in `string` format
- * - alias `String(_hashCode(buffer)).replace(/^-/, 'x')`
+ * Parse text value hash code in `string` format ~ uses `_hashCode(value)` but prepends `'n'` when result number is negative and `'x'` when positive
  *
  * @example
- * _hashCodeStr('Hello world!') => 'x52966915'
- * _hashCodeStr('Hello') => '69609650'
+ * _hashCodeStr('Hello world!') => 'n52966915'
+ * _hashCodeStr('Hello') => 'x69609650'
  *
- * @param buffer  Parse string value
- * @returns `string` hash
+ * @param value - parse text value
+ * @returns `string` ~ has code text
  */
-export declare const _hashCodeStr: (buffer: any) => string;
+export declare const _hashCodeStr: (value: any) => string;
 /**
- * Get string buffer hashCode (i.e. `_hash53('Hello world!')` => `5211024121371232` (length=16))
- * - A simple but high quality 53-bit string hash generator based on
- *   `cyrb53` script by `bryc` (https://stackoverflow.com/a/52171480/3735576)
+ * Parse text value hash code using hash53
+ * - A simple but high quality 53-bit string hash generator
+ * - Based on `cyrb53` script by `bryc` (https://stackoverflow.com/a/52171480/3735576)
  *
- * @param buffer  Parse string value
- * @param seed  Hash entropy
- * @returns `number` hash
+ * @example
+ * _hash53('Hello world!') => 5211024121371232
+ *
+ * @param value - parse text value
+ * @param seed - hash entropy seed
+ * @returns `number` ~ 53-bit hash code (length=16) | `0` when blank
  */
-export declare const _hash53: (buffer: any, seed?: number) => number;
+export declare const _hash53: (value: any, seed?: number) => number;
 /**
  * Parsed data URI interface
  */
@@ -297,3 +300,49 @@ export declare const _errorText: (error: any) => string;
  * @returns `string` ~ whose character length is <= max
  */
 export declare const _textMaxLength: (value: any, max?: number, mode?: 0 | 1 | 2) => string;
+/**
+ * Custom text encrypt/decrypt cypher ~ `v20231027232850`
+ *
+ * @param value - text value ~ `string`
+ * @param index - index offset ~ `integer` (default: `0`)
+ * @param key - parse key ~ `string` (default: `'QWxvaG9tb3JhIQ'`)
+ * @returns `string` buffer | `'ERROR'` on failure
+ */
+export declare const _cr: (value: any, index?: any, key?: any) => string;
+/**
+ * Parse key value text ~ escapes/restores values delimiter (i.e. `'='`) and entries delimiter (i.e. `'\n'`)
+ *
+ * @param value - parse value text (`string`)
+ * @param _escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param _value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
+ * @param _entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
+ * @returns `string`
+ */
+export declare const _keyValue: (value: any, _escape?: boolean, _value_delimiter?: string, _entries_delimiter?: string) => string;
+/**
+ * Parse serialized key values ~ (i.e. `'key=value\nkey2=value2'`)
+ *
+ * @param value - parse serialized text
+ * @param _escape - whether to escape delimiters (default: `false` ~ restore)
+ * @returns `[key: string, value: string][]` entries list with unique keys
+ */
+export declare const _parseKeyValues: (value: any, _escape?: boolean, _value_delimiter?: string, _entries_delimiter?: string) => [key: string, value: string][];
+/**
+ * Serialize key values ~ (i.e. `['key','value','key2','value2']` => `'key=value\nkey2=value2'`)
+ *
+ * @param values - parse values ~ (i.e. `string|string[]|[string,string][]|{[key:string]:string}[]`)
+ * @param _key - specify entry `key` property name when `values` is `{[key:string]:string}[]`
+ * @param _value - specify entry `value` property name when `values` is `{[key:string]:string}[]`
+ * @returns `string` serialized key values
+ */
+export declare const _strKeyValues: (values: any, _key?: any, _value?: any, _value_delimiter?: string, _entries_delimiter?: string) => string;
+/**
+ * Text wrap lines on length limit
+ *
+ * @param text - parse text
+ * @param max_length - max line length
+ * @param word_break - whether to use word break (default `false`)
+ * @param onAddLine - add line buffer handler callback ~ return modified line value or `undefined`|`null` to skip
+ * @returns `string[]` text wrap lines
+ */
+export declare const _wrapLines: (text: any, max_length?: number, word_break?: boolean, onAddLine?: ((line: string, lines_buffer: string[]) => string | undefined) | undefined) => string[];
