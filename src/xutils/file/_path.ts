@@ -343,35 +343,3 @@ export const _filepath = (value: any, separator?: ''|'/'|'\\', _strict: boolean 
 		return item; //<< result - IFilePath (failed)
 	}
 };
-
-/**
- * Convert bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` value
- * 
- * @param bytes - parse bytes
- * @param mode - parse mode ~ `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'`
- * @param places - decimal places
- * @returns `number`
- */
-export const _bytesValue = (bytes: number, mode: 'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB' = 'B', places: number = 2): number => {
-	if (!(bytes = _posInt(bytes, 0) ?? 0)) return 0;
-	const modes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-	let i: number = modes.findIndex(v => v.toLowerCase() === mode.toLowerCase());
-	if (i < 0) return bytes;
-	const size: number = bytes/Math.pow(1024, i);
-	return _round(size, places);
-};
-
-/**
- * Format bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` text
- * 
- * @param bytes - parse bytes
- * @param places - decimal places
- * @param commas - use thousand comma separator
- * @returns `string`
- */
-export const _bytesText = (bytes: number, places: number = 2, commas: boolean = false): string => {
-	if (!(bytes = _posInt(bytes, 0) ?? 0)) return '0 B';
-	const kb: number = 1024, labels = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-	const i = Math.floor(Math.log(bytes)/Math.log(kb)), label = labels[i], size = bytes/Math.pow(kb, i);
-	return (commas ? _commas(size, places) : _round(size, places)) + ' ' + label;
-};

@@ -97,21 +97,3 @@ export interface IFilePathError extends Error {
  * @returns `IFilePath` normalized path (stringable)
  */
 export declare const _filepath: (value: any, separator?: '' | '/' | '\\', _strict?: boolean, _type?: string, _failure?: 0 | 1 | 2) => IFilePath;
-/**
- * Convert bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` value
- *
- * @param bytes - parse bytes
- * @param mode - parse mode ~ `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'`
- * @param places - decimal places
- * @returns `number`
- */
-export declare const _bytesValue: (bytes: number, mode?: 'B' | 'KB' | 'MB' | 'GB' | 'TB' | 'PB' | 'EB' | 'ZB' | 'YB', places?: number) => number;
-/**
- * Format bytes to `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'` text
- *
- * @param bytes - parse bytes
- * @param places - decimal places
- * @param commas - use thousand comma separator
- * @returns `string`
- */
-export declare const _bytesText: (bytes: number, places?: number, commas?: boolean) => string;

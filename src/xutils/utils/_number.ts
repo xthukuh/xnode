@@ -182,3 +182,183 @@ export const _px2rem = (val: number = 1, reverse: boolean =false, base: number =
 	const unit = base === 16 ? 0.0625 : 16/base*0.0625;
 	return reverse ? val/unit : val * unit;
 };
+
+/**
+ * Convert bytes to size value
+ * 
+ * @param bytes - parse bytes
+ * @param mode - parse result mode (default: `0`)
+ * - `0` = `string` size text (e.g. `_bytesVal(2097152)` => `2 MB`)
+ * - `1` = `number` size value (e.g. `_bytesVal(2097152,1,'MB',0)` => `2`)
+ * @param unit - size unit (default: `undefined` = max) ~ `'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB'`
+ * @param places - decimal places
+ * @returns `number`
+ */
+export const _bytesVal = (bytes: number, mode: 0|1 = 0, unit?: 'B'|'KB'|'MB'|'GB'|'TB'|'PB'|'EB'|'ZB'|'YB', places: number = 2, commas: boolean = false): number|string => {
+	mode = _posInt(mode, 0, 1) ?? 0 as any;
+	if (!(bytes = _posInt(bytes, 0) ?? 0)) return mode === 1 ? 0 : '0 B'; //-- zero
+	const kb = 1024, units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+	const u: string = 'string' === typeof unit && units.includes(unit = unit.trim().toUpperCase() as any) ? unit as any : '';
+	const i: number = u ? units.findIndex(v => v.toLowerCase() === u.toLowerCase()) : Math.floor(Math.log(bytes)/Math.log(kb));
+	if (!(i >= 0 && i < units.length)) return mode === 1 ? bytes : bytes + ' B'; //-- unsupported size (defaults to bytes)
+	let val: string|number = bytes/Math.pow(kb, i);
+	if (mode === 1) return _round(val, places);
+	return (commas ? _commas(val, places) : _round(val, places)) + ' ' + units[i];
+};
+
+/**
+ * Convert decimal to base
+ * 
+ * @example
+ * _dec2base(126, 2) // '1111110'
+ * _dec2base(126, 2, 4) // '0111 1110'
+ * _dec2base(126, 8) // '176'
+ * _dec2base(126, 16) // '7E'
+ * _dec2base(1000, 16) // '03E8'
+ * _dec2base(1000, 16, 2) // '03 E8'
+ * 
+ * @param decimal - parse decimal integer
+ * @param base - to base (default: `2`) ~ `2` = binary, `8` - octal, `16` - hexadecimal
+ * @param group - space group characters length (default: `0`) ~ enabled when base = `2|16`
+ * @returns `string`
+ */
+export const _dec2base = (decimal: number, base: 2|8|16 = 2, group: number = 0): string => {
+	let dec: number = _posInt(decimal, 0) ?? 0;
+	if (dec === 0) return '0';
+	base = [2, 8, 16].includes(base = _posInt(base, 2) ?? 2 as any) ? base : 2;
+	const hex_chars: string[] = base === 16 ? '0123456789ABCDEF'.split('') : [];
+	let val: string = '';
+	while (dec > 0){
+		let remainder = dec % base;
+		val = (base === 16 ? hex_chars[remainder] : remainder) + val;
+		dec = Math.floor(dec / base);
+	}
+	if ([2, 16].includes(base) && !!(group = _posInt(group, 0) ?? 0)){
+		let buffer: string = '';
+		while (val.length){
+			let i = val.length - group;
+			buffer = val.substring(i).padStart(group, '0') + (buffer ? ' ' : '') + buffer;
+			val = val.substring(0, i);
+		}
+		val = buffer;
+	}
+	return val;
+};
+
+/**
+ * Parse decimal to binary
+ * 
+ * @example
+ * _dec2bin(126) // 1111110
+ * _dec2bin(126, 4) // 0111 1110
+ * _dec2bin(126, 8) // 01111110
+ * 
+ * @param decimal - parse decimal integer
+ * @param group - space group characters length (default: `0`)
+ * @returns `string` binary text
+ */
+export const _dec2bin = (decimal: number, group: number = 0): string => _dec2base(decimal, 2, group);
+
+/**
+ * Parse binary to decimal
+ * 
+ * @example
+ * _bin2dec('0111 1110') // 126
+ * 
+ * @param binary - parse binary text
+ * @returns `number|undefined` ~ parsed decimal integer | `undefined` when invalid
+ */
+export const _bin2dec = (binary: string): number|undefined => {
+	if (!('string' === typeof binary && /^[01]+$/.test(binary = binary.replace(/\s/g, '')))) return undefined; //-- invalid binary text
+	let dec: number = 0, pow: number = 0;
+	for (let i = binary.length - 1; i >= 0; i--){
+		dec += parseInt(binary[i]) * Math.pow(2, pow);
+		pow ++;
+	}
+	return dec;
+};
+
+/**
+ * Parse decimal to hexadecimal
+ * 
+ * @example
+ * _dec2hex(1000) // '03E8'
+ * _dec2hex(1000, 2) // '03 E8'
+ * 
+ * @param decimal - parse decimal integer `number`
+ * @param group - space group characters length (default: `0`)
+ * @returns `string` - hexadecimal text
+ */
+export const _dec2hex = (decimal: number, group: number = 0): string => _dec2base(decimal, 16, group);
+
+/**
+ * Parse hexadecimal to decimal
+ * 
+ * @example
+ * _hex2dec('0x7E') // 126
+ * _hex2dec('03 E8') // 1000
+ * 
+ * @param hex - parse hexadecimal text
+ * @returns `number|undefined` ~ parsed decimal integer | `undefined` when invalid
+ */
+export const _hex2dec = (hex: string): number|undefined => {
+	if (!('string' === typeof hex && /^[0-9A-F]+$/.test(hex = hex.replace(/0x/ig, '').replace(/\s/g, '').toUpperCase()))) return undefined; //-- invalid hexadecimal text
+	const hex_map: {[key:string]: number} = Object.fromEntries('0123456789ABCDEF'.split('').map((v, i) => [v, i]));
+	let dec = 0;
+	for (let i = 0; i < hex.length; i ++){
+		const val: number = hex_map[hex[i]];
+		dec = dec * 16 + val;
+	}
+	return dec;
+};
+
+/**
+ * Parse decimal to octal
+ * 
+ * @example
+ * _dec2oct(126) // 176
+ * _dec2oct(512) // 1000
+ * 
+ * @param decimal - parse decimal integer `number`
+ * @returns `string` - octal text
+ */
+export const _dec2oct = (decimal: number): string => _dec2base(decimal, 8);
+
+/**
+ * Parse octal to decimal
+ * 
+ * @example
+ * _oct2dec('0o176') // 126
+ * _oct2dec('1000') // 512
+ * 
+ * @param octal - parse octal text
+ * @returns `number|undefined` ~ parsed decimal integer | `undefined` when invalid
+ */
+export const _oct2dec = (octal: string): number|undefined => {
+	if (!('string' === typeof octal && /^[0-7]+$/.test(octal = octal.replace(/0o/ig, '').replace(/\s/g, '').toUpperCase()))) return undefined; //-- invalid octal text
+	let dec = 0;
+	for (let i = 0; i < octal.length; i ++){
+		const val = (octal[i] as any) - 0;
+		dec = dec * 8 + val;
+	}
+	return dec;
+};
+
+/**
+ * Parse text from base to decimal
+ * 
+ * @example
+ * _base2dec('0111 1110', 2) // 126
+ * _base2dec('0o176', 8) // 126
+ * _base2dec('0x7E', 16) // 126
+ * 
+ * @param value - parse text
+ * @param base - from base (default: `2`) ~ `2` = binary, `8` - octal, `16` - hexadecimal
+ * @returns `number|undefined` ~ parsed decimal integer | `undefined` when invalid
+ */
+export const _base2dec = (value: string, base: 2|8|16 = 2): number|undefined => {
+	base = [2, 8, 16].includes(base = _posInt(base, 2) ?? 2 as any) ? base : 2;
+	if (base === 2) return _bin2dec(value);
+	else if (base === 8) return _oct2dec(value);
+	return _hex2dec(value);
+};

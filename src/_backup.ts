@@ -1,7 +1,7 @@
 import { _parseIgnore } from './_parse_ignore';
 import { ProgTerm, _dirPath, _normSep, _print } from './__utils';
 import { IPathInfo, _exists,  _hashFile, _hashes, _renamePath, _mkdir, _pathinfo, _processArgs, _copyFile } from './xfs';
-import { Term, _asyncAll, _asyncQueue, _basename, _batchValues, _bytesText, _errorText, _filepath, _jsonStringify, _str } from './xutils';
+import { Term, _asyncAll, _asyncQueue, _basename, _batchValues, _bytesVal, _errorText, _filepath, _jsonStringify, _str } from './xutils';
 
 //Backup
 export const _run_backup = async (): Promise<any> => {
@@ -153,11 +153,11 @@ export const _run_backup = async (): Promise<any> => {
 			let buffer_size: number = 0;
 			let copy_failures: number = 0;
 			logger.set(0, 'Copying...').debug(' ');
-			logger.info(`>> Copying backup ${entries.length} entries...` + (copy_files ? ` (${copy_files} files ~ ${_bytesText(copy_size)})` : ''));
+			logger.info(`>> Copying backup ${entries.length} entries...` + (copy_files ? ` (${copy_files} files ~ ${_bytesVal(copy_size)})` : ''));
 			await _asyncQueue(entries, 20, async (entry, _, len) => {
 				
 				//fn => helper > queue progress
-				const _queue_progress = (): void => void logger.set(((count/len) + (buffer_size/copy_size))/2 * 100, `Copying... ${count}/${len}` + (copy_size ? ` ${_bytesText(buffer_size)}/${_bytesText(copy_size)}` : '')).print();
+				const _queue_progress = (): void => void logger.set(((count/len) + (buffer_size/copy_size))/2 * 100, `Copying... ${count}/${len}` + (copy_size ? ` ${_bytesVal(buffer_size)}/${_bytesVal(copy_size)}` : '')).print();
 				
 				//-- update queue progress
 				count ++;
