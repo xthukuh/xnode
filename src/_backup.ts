@@ -157,7 +157,10 @@ export const _run_backup = async (): Promise<any> => {
 			await _asyncQueue(entries, 20, async (entry, _, len) => {
 				
 				//fn => helper > queue progress
-				const _queue_progress = (): void => void logger.set(((count/len) + (buffer_size/copy_size))/2 * 100, `Copying... ${count}/${len}` + (copy_size ? ` ${_bytesVal(buffer_size)}/${_bytesVal(copy_size)}` : '')).print();
+				const _queue_progress = (): void => {
+					const percent = (copy_size ? buffer_size/copy_size : count/len) * 100;
+					logger.set(percent, `Copying... ${count}/${len}` + (copy_size ? ` ${_bytesVal(buffer_size)}/${_bytesVal(copy_size)}` : '')).print();
+				}
 				
 				//-- update queue progress
 				count ++;
