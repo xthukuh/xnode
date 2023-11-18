@@ -128,3 +128,27 @@ export declare const _datetime: (value: any) => string;
  * - `undefined` when invalid
  */
 export declare const _parseIso: (value: string) => number | undefined;
+/**
+ * Elapsed interface
+ */
+export interface IElapsed {
+    years: number;
+    months: number;
+    time: number;
+    days_total: number;
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    ms: number;
+    ms_total: number;
+}
+/**
+ * Get time difference ~ start-end time order is automatic
+ *
+ * @param start_time - start time value
+ * @param end_time - end time value
+ * @returns `IElapsed`
+ * @throws `TypeError` when time value is invalid
+ */
+export declare const _elapsed: (start_time: any, end_time: any) => IElapsed;

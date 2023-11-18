@@ -60,7 +60,15 @@ export class ProgTerm
 		percent: number;
 		label: string;
 		format: string|string[];
-	} = {} as any;
+		mode: -1|0|1; //print progress mode ~ `-1` - disabled, `0` - (default) auto, `1` - enabled
+		_clear: boolean;
+	} = {
+		percent: 0,
+		label: '',
+		format: 'dump',
+		mode: 0,
+		_clear: false,
+	} as any;
 
 	/**
 	 * Get/set progress percent ~ `0-100`
@@ -73,7 +81,7 @@ export class ProgTerm
 	}
 
 	/**
-	 * Get/set progress percent ~ `0-100`
+	 * Get/set progress label
 	 */
 	get label(): string {
 		return this[PROG_TERM_PROPS].label;
@@ -98,6 +106,17 @@ export class ProgTerm
 	}
 
 	/**
+	 * Get/set print progress mode ~ `-1` - disabled, `0` - (default) auto, `1` - enabled
+	 */
+	get mode(): -1|0|1 {
+		return this[PROG_TERM_PROPS].mode;
+	}
+	set mode(value: any){
+		const mode: any = [-1, 0, 1].includes(value = parseInt(value as any)) ? value : 0;
+		this[PROG_TERM_PROPS].mode = mode;
+	}
+
+	/**
 	 * New instance
 	 * 
 	 * @param percent - progress percent (default: `0`)
@@ -108,6 +127,7 @@ export class ProgTerm
 		this.percent = percent;
 		this.label = label;
 		this.format = format;
+		this.mode = 0;
 	}
 
 	/**
@@ -118,7 +138,7 @@ export class ProgTerm
 	 */
 	print(method?: 'log'|'debug'|'error'|'warn'|'info'|'success'|'clear'|'table', args: any[] = []): void {
 		
-		//-- clear lines
+		//fn => helper > clear lines
 		const _clear_lines = (count: number = 1) => {
 			count = _posInt(count, 1) ?? 1;
 			for (let i = 0; i < count; i ++){
@@ -128,10 +148,11 @@ export class ProgTerm
 				process.stdout.clearLine(1);
 			}
 			process.stdout.cursorTo(0);
+			this[PROG_TERM_PROPS]._clear = false;
 		};
-		// process.stdout.clearLine(0);
-		// process.stdout.cursorTo(0);
-		_clear_lines(2);
+
+		//-- clear lines
+		if (this[PROG_TERM_PROPS]._clear) _clear_lines(2);
 
 		//-- call method
 		const methods = ['log', 'debug', 'error', 'warn', 'info', 'success', 'clear', 'table'];
@@ -141,12 +162,15 @@ export class ProgTerm
 		}
 
 		//-- print progress
-		const prog_line: string = ProgTerm.PROGRESS_LINE, len = prog_line.length;
-		const prog_pos = Math.floor(this.percent/100 * len);
-		const prog_text = '[' + prog_line.substring(0, prog_pos).padEnd(len) + '] ' + this.percent + '%'
-		+ (this.label ? ' ' + this.label : '');
-		process.stdout.write('\n');
-		process.stdout.write(Term.format(this.format, prog_text).values().join(''));
+		const print_enabled: boolean = this.mode === -1 ? false : (this.mode === 0 ? this.percent > 0 && this.percent < 100 : true);
+		if (print_enabled){
+			const prog_line: string = ProgTerm.PROGRESS_LINE, len = prog_line.length;
+			const prog_pos = Math.floor(this.percent/100 * len);
+			const prog_text = '[' + prog_line.substring(0, prog_pos).padEnd(len) + '] ' + this.percent + '%' + (this.label ? ' ' + this.label : '');
+			process.stdout.write('\n');
+			process.stdout.write(Term.format(this.format, prog_text).values().join(''));
+			this[PROG_TERM_PROPS]._clear = true;
+		}
 	}
 
 	/**

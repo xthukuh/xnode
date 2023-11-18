@@ -21,6 +21,8 @@ export declare class ProgTerm {
         percent: number;
         label: string;
         format: string | string[];
+        mode: -1 | 0 | 1;
+        _clear: boolean;
     };
     /**
      * Get/set progress percent ~ `0-100`
@@ -28,7 +30,7 @@ export declare class ProgTerm {
     get percent(): number;
     set percent(value: any);
     /**
-     * Get/set progress percent ~ `0-100`
+     * Get/set progress label
      */
     get label(): string;
     set label(value: any);
@@ -37,6 +39,11 @@ export declare class ProgTerm {
      */
     get format(): string | string[];
     set format(value: any);
+    /**
+     * Get/set print progress mode ~ `-1` - disabled, `0` - (default) auto, `1` - enabled
+     */
+    get mode(): -1 | 0 | 1;
+    set mode(value: any);
     /**
      * New instance
      *

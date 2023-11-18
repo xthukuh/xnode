@@ -2,10 +2,6 @@
 // simple date helpers - consider useful libraries: https://momentjs.com/ 
 //===================================================================================
 
-import { _str } from './_string';
-import { _posInt } from './_number';
-import { _empty } from './_objects';
-
 /**
  * Date time locales
  */
@@ -25,18 +21,29 @@ export const DateLocales = {
  * @returns `Date` instance | `undefined` when invalid
  */
 export const _date = (value: any, _default?: any): Date|undefined => {
-	let date: Date|undefined = undefined;
-	if (value instanceof Date) date = value;
-	else if (!_empty(value, true)){
-		if ('number' === typeof value) date = new Date(value);
-		else if ((value = _str(value, true)) && !isNaN(value = Date.parse(value))) date = new Date(value);
-	}
-	const _get_default = (): Date|undefined => {
-		if (_empty(_default)) return undefined;
-		if (_default === true) return new Date();
-		return _date(_default);
+	
+	//fn => helper - parse date
+	const _parse = (item: any): Date|undefined => {
+		try {
+			let tmp: any;
+			if (item === undefined || item === null || item === 0 || item === '') return undefined;
+			if ('number' === typeof item) return item && Number.isInteger(tmp = new Date(item).getTime()) && tmp ? new Date(tmp) : undefined;
+			else if (item instanceof Date) return Number.isInteger(tmp = item.getTime()) && tmp ? new Date(tmp) : undefined;
+			if (Array.isArray(item)) return undefined;
+			if (!((item = String(item)) && !/\[object \w+\]/.test(item))) return undefined;
+			if (Number.isInteger(tmp = parseInt(item)) && item === tmp + '' && tmp) return new Date(tmp);
+			return Number.isInteger(tmp = Date.parse(item)) && tmp ? new Date(tmp) : undefined;
+		}
+		catch (e){
+			console.warn('_date > parse exception:', e);
+			return undefined;
+		}
 	};
-	return date && !isNaN(date.getTime()) ? date : _get_default();
+
+	//-- parse value
+	let date: Date|undefined = _parse(value);
+	if (!date) date = _default === true ? new Date() : _parse(_default);
+	return date;
 };
 
 /**
@@ -160,9 +167,16 @@ export const _monthDays = (value?: any, _default?: any): number|undefined => {
  * @returns `number` timestamp in milliseconds | `undefined` when invalid
  */
 export const _time = (value: any, min?: number, max?: number, _default?: any): number|undefined => {
-	let date: Date|undefined, time: number|undefined = undefined;
-	if ((date = _date(value)) && Number.isInteger(time = _posInt(date.getTime(), min, max))) return time;
-	return (date = _date(_default)) && Number.isInteger(time = _posInt(date.getTime(), min, max)) ? time : undefined;
+	const _parse = (item: any): number|undefined => {
+		let tmp: any, val: number = 0;
+		if (!((tmp = _date(item)) && (val = tmp.getTime()))) return undefined;
+		if ('number' === typeof min && val < min) return undefined;
+		if ('number' === typeof max && val > max) return undefined;
+		return val;
+	};
+	let time: number|undefined = _parse(value);
+	if (!Number.isInteger(time)) time = _parse(_default);
+	return time;
 };
 
 /**
@@ -210,7 +224,13 @@ export const _parseIso = (value: string): number|undefined => {
 	//                1 YYYY                2 MM        3 DD              4 HH     5 mm        6 ss           7 msec         8 Z 9 ±   10 tzHH    11 tzmm
 	const regex  = /^(\d{4}|[+-]\d{6})(?:-?(\d{2})(?:-?(\d{2}))?)?(?:[ T]?(\d{2}):?(\d{2})(?::?(\d{2})(?:[,.](\d{1,}))?)?(?:(Z)|([+-])(\d{2})(?::?(\d{2}))?)?)?$/;
 	let struct: any, timestamp: number = NaN;
-	if (struct = regex.exec(value = _str(value, true))){
+	try {
+		value = String(value);
+	}
+	catch (e){
+		value = '';
+	}
+	if (struct = regex.exec(value)){
 		for (const k of [1, 4, 5, 6, 7, 10, 11]) struct[k] = +struct[k] || 0; //allow undefined days and months
 		struct[2] = (+struct[2]||1) - 1;
 		struct[3] = +struct[3]||1; //allow arbitrary sub-second precision beyond milliseconds
@@ -229,4 +249,119 @@ export const _parseIso = (value: string): number|undefined => {
 	}
 	else timestamp = Date.parse ? Date.parse(value) : NaN;
 	return !isNaN(timestamp) ? timestamp : undefined;
+};
+
+/**
+ * Elapsed interface
+ */
+export interface IElapsed {
+	years: number;
+	months: number;
+	time: number;
+	days_total: number;
+	days: number;
+	hours: number;
+	minutes: number;
+	seconds: number;
+	ms: number;
+	ms_total: number;
+}
+
+/**
+ * Get time difference ~ start-end time order is automatic
+ * 
+ * @param start_time - start time value
+ * @param end_time - end time value
+ * @returns `IElapsed`
+ * @throws `TypeError` when time value is invalid
+ */
+export const _elapsed = (start_time: any, end_time: any): IElapsed => {
+	
+	//-- parse date values
+	const start_val: Date|undefined = _date(start_time);
+	if (!start_val) throw new TypeError('The elapsed start time is not a valid date value.');
+	const end_val: Date|undefined = _date(end_time);
+	if (!end_val) throw new TypeError('The elapsed end time is not a valid date value.');
+	
+	//-- reorder start <= end
+	const minmax: [Date, Date] = start_val > end_val ? [end_val, start_val] : [start_val, end_val];
+	const start: Date = new Date(minmax[0].getTime());
+	const end: Date = new Date(minmax[1].getTime());
+	
+	//-- elapsed vars
+	let years: number = 0;
+	let months: number = 0;
+	let time: number = 0;
+	let days_total: number = 0;
+	let days: number = 0;
+	let hours: number = 0;
+	let minutes: number = 0;
+	let seconds: number = 0;
+	let ms: number = 0
+	let ms_total: number = 0;
+	
+	//-- elapsed time
+	time = end.getTime() - start.getTime();
+	days_total = Math.floor(time / (24 * 60 * 60 * 1000));
+	if ((ms += (end.getMilliseconds() - start.getMilliseconds())) < 0){
+		seconds --;
+		ms += 1000;
+	}
+	ms_total += ms;
+	if ((seconds += (end.getSeconds() - start.getSeconds())) < 0){
+		minutes --;
+		seconds += 60;
+	}
+	ms_total += seconds * 60 * 1000;
+	if ((minutes += (end.getMinutes() - start.getMinutes())) < 0){
+		hours --;
+		minutes += 60;
+	}
+	ms_total += minutes * 60 * 60 * 1000;
+	if ((hours += (end.getHours() - start.getHours())) < 0){
+		days --;
+		hours += 24;
+	}
+	ms_total += hours * 24 * 60 * 60 * 1000;
+
+	//-- elapsed years > months > days
+	const start_year: number = start.getFullYear();
+	const start_month: number = start.getMonth();
+	years = end.getFullYear() - start_year;
+	if ((months = end.getMonth() - start_month) < 0){
+		years --;
+		months += 12;
+	}
+	//TODO: debug days discrepancy
+	// const start_date: number = start.getDate();
+	// const end_date: number = end.getDate();
+	// let sum_days: number = 0;
+	// if (start_date >= end_date){
+	// 	sum_days = new Date(start_year, start_month + 1, 0).getDate() - start_date;
+	// 	sum_days += end_date;
+	// }
+	// else if (start_date < end_date) sum_days = end_date - start_date;
+	// console.log({days, sum_days});
+	if ((days += (end.getDate() - start.getDate())) < 0){
+		if (months > 0) months --;
+		else {
+			years --;
+			months = 11;
+		}
+		days += new Date(start_year, start_month + 1, 0).getDate();
+	}
+	
+	//<< result - IElapsed
+	return {
+		years,
+		months,
+		time,
+		days_total,
+		days,
+		hours,
+		minutes,
+		seconds,
+		ms,
+		ms_total,
+	}
 };
