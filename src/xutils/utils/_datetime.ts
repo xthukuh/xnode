@@ -299,9 +299,10 @@ export const _elapsed = (start_time: any, end_time: any): IElapsed => {
 	let seconds: number = 0;
 	let ms: number = 0
 	let ms_total: number = 0;
-	
+	let diff: number = 0;
+
 	//-- elapsed time
-	time = end.getTime() - start.getTime();
+	diff = time = end.getTime() - start.getTime();
 	days_total = Math.floor(time / (24 * 60 * 60 * 1000));
 	if ((ms += (end.getMilliseconds() - start.getMilliseconds())) < 0){
 		seconds --;
@@ -326,24 +327,17 @@ export const _elapsed = (start_time: any, end_time: any): IElapsed => {
 
 	//-- elapsed years > months > days
 	const start_year: number = start.getFullYear();
-	const start_month: number = start.getMonth();
+	let start_month: number = start.getMonth();
 	years = end.getFullYear() - start_year;
 	if ((months = end.getMonth() - start_month) < 0){
 		years --;
 		months += 12;
 	}
-	//TODO: debug days discrepancy
-	// const start_date: number = start.getDate();
-	// const end_date: number = end.getDate();
-	// let sum_days: number = 0;
-	// if (start_date >= end_date){
-	// 	sum_days = new Date(start_year, start_month + 1, 0).getDate() - start_date;
-	// 	sum_days += end_date;
-	// }
-	// else if (start_date < end_date) sum_days = end_date - start_date;
-	// console.log({days, sum_days});
 	if ((days += (end.getDate() - start.getDate())) < 0){
-		if (months > 0) months --;
+		if (end.getMonth() === start.getMonth()) start_month ++;
+		if (months > 0){
+			months --;
+		}
 		else {
 			years --;
 			months = 11;
