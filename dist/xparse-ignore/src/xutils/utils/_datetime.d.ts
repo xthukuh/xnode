@@ -1,108 +1,4 @@
 /**
- * Date time locales
- */
-export declare const DateLocales: {
-    monthNames: string[];
-    dayNames: string[];
-    AM: string;
-    PM: string;
-};
-/**
- * Parse `Date` value
- * - ignores empty or nil value (i.e. `undefined`|`null`|0|`''`)
- *
- * @param value - parse date value
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `Date` instance | `undefined` when invalid
- */
-export declare const _date: (value: any, _default?: any) => Date | undefined;
-/**
- * Get today's `Date` instance at midnight
- * - i.e. `new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), 0, 0, 0, 0))`
- *
- * @param value - parse date value
- * @returns `Date` instance
- */
-export declare const _today: () => Date;
-/**
- * Get `Date` midnight value
- *
- * @example
- * _midnight('2023-10-05 23:18:52') => '2023-10-05 00:00:00'
- *
- * @param value - parse date value (`undefined` => `new Date()`) ~ `value ?? new Date()`
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `Date` instance | `undefined` when invalid
- */
-export declare const _midnight: (value: any, _default?: any) => Date | undefined;
-/**
- * Get `Date` midnight value yesterday ~ **-1 DAY**
- *
- * @example
- * _yesterday('2023-10-05 23:18:52') => '2023-10-04 00:00:00'
- *
- * @param value - parse date value (`undefined` => `new Date()`) ~ `value ?? new Date()`
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `Date` instance | `undefined` when invalid
- */
-export declare const _yesterday: (value?: any, _default?: any) => Date | undefined;
-/**
- * Get `Date` value at midnight tomorrow ~ **+1 DAY**
- *
- * @example
- * _tomorrow('2023-10-05 23:18:52') => '2023-10-06 00:00:00'
- *
- * @param value - parse date value (`undefined` => `new Date()`) ~ `value ?? new Date()`
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `Date` instance | `undefined` when invalid
- */
-export declare const _tomorrow: (value?: any, _default?: any) => Date | undefined;
-/**
- * Get `Date` value at midnight **first** day of the month
- *
- * @example
- * _monthStart('2023-10-05 23:18:52') => '2023-10-01 00:00:00'
- *
- * @param value - parse date value (`undefined` => `new Date()`) ~ `value ?? new Date()`
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `Date` instance | `undefined` when invalid
- */
-export declare const _monthStart: (value?: any, _default?: any) => Date | undefined;
-/**
- * Get `Date` value **last** day of the month ~ just before midnight (i.e. time `23:59:59 999`)
- *
- * @example
- * _monthEnd('2022-02-16 23:18:52') => '2022-02-28 23:59:59'
- * _monthEnd('2020-02-16 23:18:52') => '2020-02-29 23:59:59'
- *
- * @param value - parse date value (`undefined` => `new Date()`) ~ `value ?? new Date()`
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `Date` instance | `undefined` when invalid
- */
-export declare const _monthEnd: (value?: any, _default?: any) => Date | undefined;
-/**
- * Get `Date` value month days count ~ month's last date
- *
- * @example
- * _monthDays('2022-02-16 23:18:52') => 28
- * _monthDays('2020-02-16 23:18:52') => 29
- *
- * @param value - parse date value (`undefined` => `new Date()`) ~ `value ?? new Date()`
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `number` last date | `undefined` when invalid
- */
-export declare const _monthDays: (value?: any, _default?: any) => number | undefined;
-/**
- * Get parsed `Date` value time milliseconds (i.e. `date.getTime()`)
- *
- * @param value - parse date value
- * @param min - set `min` timestamp limit ~ enabled when `min` is a valid timestamp integer
- * @param max - set `max` timestamp limit ~ enabled when `max` is a valid timestamp integer
- * @param _default - default date value when invalid (`true` => `new Date()`)
- * @returns `number` timestamp in milliseconds | `undefined` when invalid
- */
-export declare const _time: (value: any, min?: number, max?: number, _default?: any) => number | undefined;
-/**
  * Validate `Date` instance
  *
  * @param value
@@ -110,14 +6,87 @@ export declare const _time: (value: any, min?: number, max?: number, _default?: 
  */
 export declare const _isDate: (value: any) => boolean;
 /**
+ * Parse `Date` value ~ accepts valid `Date` instance, timestamp integer, datetime string (see `_strict` param docs)
+ *
+ * @param value - parse date value
+ * @param _strict - (default: `true`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns `Date` instance | `undefined` when invalid
+ */
+export declare const _date: (value: any, _strict?: boolean) => Date | undefined;
+/**
+ * Parsed `Date` timestamp value (i.e. `date.getTime()`) ~ _see `_date`_
+ *
+ * @param value - parse date value
+ * @param min - set `min` timestamp limit ~ enabled when `min` is a valid timestamp integer
+ * @param max - set `max` timestamp limit ~ enabled when `max` is a valid timestamp integer
+ * @param _strict - (default: `true`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns `number` timestamp in milliseconds | `undefined` when invalid
+ */
+export declare const _time: (value: any, min?: number, max?: number, _strict?: boolean) => number | undefined;
+/**
+ * Day names
+ * - `('Sunday'|'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Saturday')[]`
+ */
+export declare const DAY_NAMES: string[];
+/**
+ * Get day name
+ *
+ * @param index - (default: `0`) day index `0-6` ~ `DAY_NAMES[Math.abs(index % DAY_NAMES.length)]`
+ * @returns `string` ~ `'Sunday'|'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Saturday'`
+ */
+export declare const _dayName: (index: any) => string;
+/**
+ * Month names
+ * - `('January'|'February'|'March'|'April'|'May'|'June'|'July'|'August'|'September'|'October'|'November'|'December')[]`
+ */
+export declare const MONTH_NAMES: string[];
+/**
+ * Get month name
+ *
+ * @param index - (default: `0`) day index `0-11` ~ `MONTH_NAMES[Math.abs(index % DAY_NAMES.length)]`
+ * @returns `string` ~ `'January'|'February'|'March'|'April'|'May'|'June'|'July'|'August'|'September'|'October'|'November'|'December'`
+ */
+export declare const _monthName: (index: any) => string;
+/**
+ * Parse `Date` day start ~ at `00:00:00 0`
+ *
+ * @param value - parse date value
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ */
+export declare const _dayStart: (value?: any, _strict?: boolean) => Date;
+/**
+ * Parse `Date` day end ~ at `23:59:59 999`
+ *
+ * @param value - parse date value
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ */
+export declare const _dayEnd: (value?: any, _strict?: boolean) => Date;
+/**
+ * Parse `Date` month's start day ~ at `00:00:00 0`
+ *
+ * @param value - parse date value
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ */
+export declare const _monthStart: (value?: any, _strict?: boolean) => Date;
+/**
+ * Parse `Date` month's end day ~ at `23:59:59 999`
+ *
+ * @param value - parse date value
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ */
+export declare const _monthEnd: (value?: any, _strict?: boolean) => Date;
+/**
  * Parse `Date` value to `datetime` format (i.e. `2023-05-27 22:11:57` ~ `YYYY-MM-DD HH:mm:ss`)
  *
  * @param value - parse date value
- * @returns
- * - `string` ~ formatted `YYYY-MM-DD HH:mm:ss`
- * - `''` when date value is invalid
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @returns - `string` ~ formatted `YYYY-MM-DD HH:mm:ss` | empty `''` when invalid
  */
-export declare const _datetime: (value: any) => string;
+export declare const _datetime: (value?: any, _strict?: boolean) => string;
 /**
  * Parse ISO formatted date value to milliseconds timestamp
  * - borrowed from https://github.com/jquense/yup/blob/1ee9b21c994b4293f3ab338119dc17ab2f4e284c/src/util/parseIsoDate.ts
@@ -129,26 +98,41 @@ export declare const _datetime: (value: any) => string;
  */
 export declare const _parseIso: (value: string) => number | undefined;
 /**
- * Elapsed interface
+ * Duration interface
  */
-export interface IElapsed {
+export interface IDuration {
+    start: Date;
+    end: Date;
     years: number;
     months: number;
-    time: number;
-    days_total: number;
     days: number;
     hours: number;
     minutes: number;
     seconds: number;
-    ms: number;
-    ms_total: number;
+    milliseconds: number;
+    total_days: number;
+    total_time: number;
+    toString: (mode?: number) => string;
 }
 /**
- * Get time difference ~ start-end time order is automatic
+ * Get elapsed time ~ difference between two date/time values (ordered automatically)
+ * - accepts any date value format
  *
- * @param start_time - start time value
- * @param end_time - end time value
- * @returns `IElapsed`
- * @throws `TypeError` when time value is invalid
+ * @param start - start date
+ * @param end - end date
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @throws `TypeError` on invalid start/end time value
+ * @returns `IDuration`
  */
-export declare const _elapsed: (start_time: any, end_time: any) => IElapsed;
+export declare const _elapsed: (start: any, end: any, _strict?: boolean) => IDuration;
+/**
+ * Get elapsed time ~ difference between two date/time values (ordered automatically)
+ * - accepts any date value format
+ *
+ * @param start - start date
+ * @param end - end date
+ * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @throws `TypeError` on invalid start/end time value
+ * @returns `IDuration`
+ */
+export declare const _duration: (start: any, end: any, _strict?: boolean) => IDuration;
