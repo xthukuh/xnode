@@ -2,7 +2,7 @@ import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
 import * as Crypto from 'crypto';
-import { Term, _errorText, _filepath, _getAllProperties, _jsonParse, _posInt, _round, _str } from '../xutils';
+import { Term, _basename, _errorText, _filepath, _getAllProperties, _jsonParse, _posInt, _round, _str } from '../xutils';
 
 
 /**
@@ -160,6 +160,7 @@ export const _pathinfo = (path: string, mode: 0|1|2 = 0): IPathInfo|undefined =>
 		path_full: _realpath(path),
 		dir: _dirname(path),
 		dir_full: _dirname(path, true),
+		basename: _filename(path),
 		target: _realpath(path, true),
 		dev: stats.dev,
 		mode: stats.mode,

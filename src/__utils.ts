@@ -61,13 +61,13 @@ export class ProgTerm
 		label: string;
 		format: string|string[];
 		mode: -1|0|1; //print progress mode ~ `-1` - disabled, `0` - (default) auto, `1` - enabled
-		_clear: boolean;
+		_clear: number;
 	} = {
 		percent: 0,
 		label: '',
 		format: 'dump',
 		mode: 0,
-		_clear: false,
+		_clear: 0,
 	} as any;
 
 	/**
@@ -139,8 +139,8 @@ export class ProgTerm
 	print(method?: 'log'|'debug'|'error'|'warn'|'info'|'success'|'clear'|'table', args: any[] = []): void {
 		
 		//fn => helper > clear lines
-		const _clear_lines = (count: number = 1) => {
-			count = _posInt(count, 1) ?? 1;
+		const _clear_lines = (count: number): void => {
+			if (!count) return;
 			for (let i = 0; i < count; i ++){
 				const y: any = i === 0 ? null : -1;
 				if (!i) process.stdout.clearLine(0);
@@ -148,11 +148,11 @@ export class ProgTerm
 				process.stdout.clearLine(1);
 			}
 			process.stdout.cursorTo(0);
-			this[PROG_TERM_PROPS]._clear = false;
+			this[PROG_TERM_PROPS]._clear = 0;
 		};
 
 		//-- clear lines
-		if (this[PROG_TERM_PROPS]._clear) _clear_lines(2);
+		_clear_lines(this[PROG_TERM_PROPS]._clear);
 
 		//-- call method
 		const methods = ['log', 'debug', 'error', 'warn', 'info', 'success', 'clear', 'table'];
@@ -166,10 +166,12 @@ export class ProgTerm
 		if (print_enabled){
 			const prog_line: string = ProgTerm.PROGRESS_LINE, len = prog_line.length;
 			const prog_pos = Math.floor(this.percent/100 * len);
-			const prog_text = '[' + prog_line.substring(0, prog_pos).padEnd(len) + '] ' + this.percent + '%' + (this.label ? ' ' + this.label : '');
-			process.stdout.write('\n');
-			process.stdout.write(Term.format(this.format, prog_text).values().join(''));
-			this[PROG_TERM_PROPS]._clear = true;
+			const prog_text = '[' + prog_line.substring(0, prog_pos).padEnd(len) + '] ' + this.percent + '%';
+			const print_lines: string[] = [''];
+			if (this.label) print_lines.push(this.label);
+			print_lines.push(prog_text);
+			process.stdout.write(Term.format(this.format, print_lines.join('\n')).values().join(''));
+			this[PROG_TERM_PROPS]._clear = print_lines.length;
 		}
 	}
 
