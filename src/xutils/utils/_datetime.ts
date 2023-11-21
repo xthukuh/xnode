@@ -12,13 +12,16 @@ export const _isDate = (value: any): boolean => value instanceof Date && !isNaN(
 
 /**
  * Parse `Date` value ~ accepts valid `Date` instance, timestamp integer, datetime string (see `_strict` param docs)
+ * - supports valid `Date` instance, `integer|string` timestamp in milliseconds and other `string` date texts
+ * - when strict parsing, value must be a valid date value with more than `1` timestamp milliseconds
+ * - when strict parsing is disabled, result for `undefined` = `new Date()` and `null|false|true|0` = `new Date(null|false|true|0)`
  * 
- * @param value - parse date value
- * @param _strict - (default: `true`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @param value - parse datetime value
+ * @param _strict - enable strict parsing (default: `true`)
  * @returns `Date` instance | `undefined` when invalid
  */
 export const _date = (value: any, _strict: boolean = true): Date|undefined => {
-	if (value === undefined) return undefined;
+	if (value === undefined) return _strict ? undefined : new Date();
 	const _parse = (val: any): Date|undefined => !isNaN(val) && (val > 1 || !_strict) ? new Date(val) : undefined;
 	if ([null, false, true, 0].includes(value)) return _parse(value);
 	if (value instanceof Date) return _parse(value.getTime());
@@ -36,12 +39,13 @@ export const _date = (value: any, _strict: boolean = true): Date|undefined => {
 };
 
 /**
- * Parsed `Date` timestamp value (i.e. `date.getTime()`) ~ _see `_date`_
+ * Parsed `Date` timestamp value (i.e. `date.getTime()`)
+ * - see `_date()` parsing docs
  * 
- * @param value - parse date value
+ * @param value - parse datetime value
  * @param min - set `min` timestamp limit ~ enabled when `min` is a valid timestamp integer
  * @param max - set `max` timestamp limit ~ enabled when `max` is a valid timestamp integer
- * @param _strict - (default: `true`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @param _strict - enable strict parsing (default: `true`)
  * @returns `number` timestamp in milliseconds | `undefined` when invalid
  */
 export const _time = (value: any, min?: number, max?: number, _strict: boolean = true): number|undefined => {
@@ -89,10 +93,11 @@ export const _monthName = (index: any): string => {
 
 /**
  * Parse `Date` day start ~ at `00:00:00 0`
+ * - see `_date()` parsing docs
  * 
- * @param value - parse date value
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
- * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ * @param value - parse datetime value
+ * @param _strict - enable strict datetime parsing (default: `false`)
+ * @returns `Date`
  */
 export const _dayStart = (value?: any, _strict: boolean = false): Date => {
 	const date: Date = _date(value, _strict) ?? new Date();
@@ -101,10 +106,11 @@ export const _dayStart = (value?: any, _strict: boolean = false): Date => {
 
 /**
  * Parse `Date` day end ~ at `23:59:59 999`
+ * - see `_date()` parsing docs
  * 
- * @param value - parse date value
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
- * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ * @param value - parse datetime value
+ * @param _strict - enable strict datetime parsing (default: `false`)
+ * @returns `Date`
  */
 export const _dayEnd = (value?: any, _strict: boolean = false): Date => {
 	const date: Date = _date(value, _strict) ?? new Date();
@@ -113,10 +119,11 @@ export const _dayEnd = (value?: any, _strict: boolean = false): Date => {
 
 /**
  * Parse `Date` month's start day ~ at `00:00:00 0`
+ * - see `_date()` parsing docs
  * 
- * @param value - parse date value
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
- * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ * @param value - parse datetime value
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `Date`
  */
 export const _monthStart = (value?: any, _strict: boolean = false): Date => {
 	const date: Date = _date(value, _strict) ?? new Date();
@@ -125,10 +132,11 @@ export const _monthStart = (value?: any, _strict: boolean = false): Date => {
 
 /**
  * Parse `Date` month's end day ~ at `23:59:59 999`
+ * - see `_date()` parsing docs
  * 
- * @param value - parse date value
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
- * @returns `Date` instance ~ defaults to `new Date()` when value argument is empty or invalid
+ * @param value - parse datetime value
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `Date`
  */
 export const _monthEnd = (value?: any, _strict: boolean = false): Date => {
 	const date: Date = _date(value, _strict) ?? new Date();
@@ -137,10 +145,11 @@ export const _monthEnd = (value?: any, _strict: boolean = false): Date => {
 
 /**
  * Parse `Date` value to `datetime` format (i.e. `2023-05-27 22:11:57` ~ `YYYY-MM-DD HH:mm:ss`)
+ * - see `_date()` parsing docs
  * 
- * @param value - parse date value
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
- * @returns - `string` ~ formatted `YYYY-MM-DD HH:mm:ss` | empty `''` when invalid
+ * @param value - parse datetime value
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `string` ~ formatted `YYYY-MM-DD HH:mm:ss` | empty `''` when invalid
  */
 export const _datetime = (value?: any, _strict: boolean = false): string => {
 	const date: Date|undefined = _date(value, _strict);
@@ -163,13 +172,11 @@ export const _datetime = (value?: any, _strict: boolean = false): string => {
  * - borrowed from https://github.com/jquense/yup/blob/1ee9b21c994b4293f3ab338119dc17ab2f4e284c/src/util/parseIsoDate.ts
  * 
  * @param value - ISO date `string` (i.e. `'2022-12-19T13:12:42.000+0000'`/`'2022-12-19T13:12:42.000Z'` => `1671455562000`)
- * @returns
- * - `number` milliseconds timestamp
- * - `undefined` when invalid
+ * @returns `number` milliseconds timestamp | `undefined` when invalid
  */
 export const _parseIso = (value: string): number|undefined => {
-	//                1 YYYY                2 MM        3 DD              4 HH     5 mm        6 ss           7 msec         8 Z 9 ±   10 tzHH    11 tzmm
 	const regex  = /^(\d{4}|[+-]\d{6})(?:-?(\d{2})(?:-?(\d{2}))?)?(?:[ T]?(\d{2}):?(\d{2})(?::?(\d{2})(?:[,.](\d{1,}))?)?(?:(Z)|([+-])(\d{2})(?::?(\d{2}))?)?)?$/;
+	//                1 YYYY                2 MM        3 DD              4 HH     5 mm        6 ss           7 msec         8 Z 9 ±   10 tzHH    11 tzmm
 	let struct: any, timestamp: number = NaN;
 	try {
 		value = String(value);
@@ -199,28 +206,117 @@ export const _parseIso = (value: string): number|undefined => {
 };
 
 /**
+ * Year unit milliseconds ~ close estimate `365.25` days
+ * - `365.25 * 24 * 60 * 60 * 1000` = `31557600000` ms
+ */
+export const YEAR_MS: number = 365.25 * 24 * 60 * 60 * 1000;
+
+/**
+ * Month unit milliseconds ~ close estimate `30.44` days
+ * - `30.44 * 24 * 60 * 60 * 1000` = `2630016000.0000005` ms
+ */
+export const MONTH_MS: number = 30.44 * 24 * 60 * 60 * 1000;
+
+/**
+ * Day unit milliseconds
+ * - `24 * 60 * 60 * 1000` = `86400000` ms
+ */
+export const DAY_MS: number = 24 * 60 * 60 * 1000;
+
+/**
+ * Hour unit milliseconds
+ * - `60 * 60 * 1000` = `3600000` ms
+ */
+export const HOUR_MS: number = 60 * 60 * 1000;
+
+/**
+ * Minute unit milliseconds
+ * - `60 * 1000` = `60000` ms
+ */
+export const MINUTE_MS: number = 60 * 1000;
+
+/**
+ * Second unit milliseconds
+ * - `1000` ms
+ */
+export const SECOND_MS: number = 1000;
+
+/**
  * Duration interface
  */
 export interface IDuration {
-	start: Date,
-	end: Date,
+	
+	/**
+	 * - duration years
+	 */
 	years: number;
+	
+	/**
+	 * - duration months
+	 */
 	months: number;
+	
+	/**
+	 * - duration days
+	 */
 	days: number;
+	
+	/**
+	 * - duration hours
+	 */
 	hours: number;
+	
+	/**
+	 * - duration minutes
+	 */
 	minutes: number;
+	
+	/**
+	 * - duration seconds
+	 */
 	seconds: number;
+	
+	/**
+	 * - duration milliseconds
+	 */
 	milliseconds: number;
+	
+	/**
+	 * - duration total days (i.e. `Math.floor((time_difference_ms)/(24*60*60*1000))`)
+	 */
 	total_days: number;
+	
+	/**
+	 * - duration total time in milliseconds (i.e. `Math.abs(time_difference_ms)`)
+	 */
 	total_time: number;
+
+	/**
+	 * - start timestamp in milliseconds
+	 */
+	start_time: number,
+	
+	/**
+	 * - end timestamp in milliseconds
+	 */
+	end_time: number,
+
+	/**
+	 * - convert to text method
+	 * 
+	 * @example
+	 * _duration(182458878).toString(0?) //'2 days 02:40:58' (short)
+	 * _duration(182458878).toString(1)  //'2 days, 2 hours, 40 minutes, 58 seconds and 878 milliseconds' (long)
+	 * 
+	 * @param mode - text mode (default: `0`) ~ `0` = short, `1` = long _(see docs)_
+	 * @returns `string`
+	 */
 	toString: (mode?:number)=>string;
 }
 
 /**
- * Create elapsed time object
+ * **[internal]** Create `IDuration` object
  * 
- * @param start - date start 
- * @param end - date end 
  * @param years - elapsed years
  * @param months - elapsed months
  * @param days - elapsed days
@@ -230,23 +326,11 @@ export interface IDuration {
  * @param milliseconds - elapsed milliseconds
  * @param total_days - elapsed total days
  * @param total_time - elapsed total time
+ * @param start_time - start timestamp
+ * @param end_time - end timestamp
  * @returns `IDuration`
  */
-const _get_duration = (
-	start: Date,
-	end: Date,
-	years: number,
-	months: number,
-	days: number,
-	hours: number,
-	minutes: number,
-	seconds: number,
-	milliseconds: number,
-	total_days: number,
-	total_time: number,
-) => ({
-	start,
-	end,
+const create_duration = (years: number, months: number, days: number, hours: number, minutes: number, seconds: number, milliseconds: number, total_days: number, total_time: number, start_time: number, end_time: number) => ({
 	years,
 	months,
 	days,
@@ -256,21 +340,17 @@ const _get_duration = (
 	milliseconds,
 	total_days,
 	total_time,
+	start_time,
+	end_time,
 	toString: function(mode: number = 0){
-		let buffer: string = '';
+		mode = [0, 1].includes(mode = parseInt(mode as any)) ? mode : 0;
+		const buffer_text: string[] = [], buffer_time: string[] = [];
 		const _add = (val: any, name: string): void => {
-			if (mode === 0){
-				if (['hour', 'minute', 'second', 'millisecond'].includes(name)){
-					if (name === 'millisecond') return;
-					val = String(val).padStart(2, '0');
-					if (name === 'hour') buffer += (buffer ? ' ' : '') + val;
-					else buffer += ':' + val;
-					return;
-				}
-				if (val) buffer += (buffer ? ' ' : '') + val + ' ' + (val === 1 ? name : name + 's');
-				return;
+			if (mode === 0 && ['hour', 'minute', 'second', 'millisecond'].includes(name)){
+				if (name === 'millisecond') return;
+				buffer_time.push(String(val).padStart(2, '0'));
 			}
-			else if (val) buffer += (buffer ? ', ' : '') + val + ' ' + (val === 1 ? name : name + 's');
+			else if (val) buffer_text.push(val + ' ' + name + (val > 1 ? 's' : ''));
 		};
 		_add(years, 'year');
 		_add(months, 'month');
@@ -279,24 +359,24 @@ const _get_duration = (
 		_add(minutes, 'minute');
 		_add(seconds, 'second');
 		_add(milliseconds, 'millisecond');
-		if (!buffer) buffer = '0 milliseconds';
-		if (mode === 0) return buffer;
-		const values = buffer.split(', ').map(v => v.trim());
-		return values.length > 1 ? values.slice(0, -1).join(', ') + ' and ' + values[values.length - 1] : values.join('');
+		if (mode === 0) return (buffer_text.length ? buffer_text.join(', ') + ' ' : '') + buffer_time.join(':');
+		if (!buffer_text.length) buffer_text.push('0 milliseconds');
+		return buffer_text.join(', ').replace(/,([^,]*)$/, ' and$1');
+		// return buffer_text.length > 1 ? buffer_text.slice(0, -1).join(', ') + ' and ' + buffer_text[buffer_text.length - 1] : buffer_text.join('');
 	},
 });
 
 /**
- * Get elapsed time ~ difference between two date/time values (ordered automatically)
- * - accepts any date value format
+ * Get elapsed duration between two dates/timestamps ~ extra accuracy considering leap years
+ * - start and end values are reordered automatically (start = min, end = max)
  * 
- * @param start - start date
- * @param end - end date
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @param start - start date/timestamp
+ * @param end - end date/timestamp (default: `undefined`)
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
  * @throws `TypeError` on invalid start/end time value
  * @returns `IDuration`
  */
-export const _elapsed = (start: any, end: any, _strict: boolean = false): IDuration => {
+export const _elapsed = (start: any, end: any = undefined, _strict: boolean = false): IDuration => {
 	if (!(start = _date(start, _strict))) throw new TypeError('Invalid elapsed start date value! Pass a valid Date instance, integer timestamp or date string value.');
 	if (!(end = _date(end, _strict))) throw new TypeError('Invalid elapsed end date value! Pass a valid Date instance, integer timestamp or date string value.');
 	if (start > end){
@@ -311,8 +391,10 @@ export const _elapsed = (start: any, end: any, _strict: boolean = false): IDurat
 	let minutes: number = 0;
 	let seconds: number = 0;
 	let milliseconds: number = 0
-	const total_time: number = end.getTime() - start.getTime();
-	const total_days: number = Math.floor(total_time / (24 * 60 * 60 * 1000));
+	const start_time: number = start.getTime();
+	const end_time: number = end.getTime();
+	const total_time: number = end_time - start_time;
+	const total_days: number = Math.floor(total_time / DAY_MS);
 	if ((milliseconds += (end.getMilliseconds() - start.getMilliseconds())) < 0){
 		seconds --;
 		milliseconds += 1000;
@@ -345,32 +427,20 @@ export const _elapsed = (start: any, end: any, _strict: boolean = false): IDurat
 		else months --;
 		days += new Date(start_year, start_month + 1, 0).getDate();
 	}
-	return _get_duration(
-		start,
-		end,
-		years,
-		months,
-		days,
-		hours,
-		minutes,
-		seconds,
-		milliseconds,
-		total_days,
-		total_time,
-	);
+	return create_duration(years, months, days, hours, minutes, seconds, milliseconds, total_days, total_time, start_time, end_time);
 };
 
 /**
- * Get elapsed time ~ difference between two date/time values (ordered automatically)
- * - accepts any date value format
+ * Get elapsed duration between two dates/timestamps ~ closest estimation
+ * - start and end values are reordered automatically (start = min, end = max)
  * 
- * @param start - start date
- * @param end - end date
- * @param _strict - (default: `false`) strict date parsing mode ~ accepts `Date`|`number` value where result `date.getTime() > 1`
+ * @param start - start date/ms timestamp
+ * @param end - end date/ms timestamp (default: `0`)
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
  * @throws `TypeError` on invalid start/end time value
  * @returns `IDuration`
  */
-export const _duration = (start: any, end: any, _strict: boolean = false): IDuration => {
+export const _duration = (start: any, end: any = 0, _strict: boolean = false): IDuration => {
 	if (!(start = _date(start, _strict))) throw new TypeError('Invalid duration start date value! Pass a valid Date instance, integer timestamp or date string value.');
 	if (!(end = _date(end, _strict))) throw new TypeError('Invalid duration end date value! Pass a valid Date instance, integer timestamp or date string value.');
 	if (start > end){
@@ -379,42 +449,21 @@ export const _duration = (start: any, end: any, _strict: boolean = false): IDura
 		end = swap;
 	}
 	let diff: number = 0;
-	const total_time: number = Math.abs(end.getTime() - start.getTime());
-	const total_days: number = Math.floor(total_time / (24 * 60 * 60 * 1000));
-	const years = Math.floor(total_time / (365.25 * 24 * 60 * 60 * 1000));
-	diff %= 365.25 * 24 * 60 * 60 * 1000;
-	const months: number = Math.floor(diff / (30.44 * 24 * 60 * 60 * 1000));
-	diff %= 30.44 * 24 * 60 * 60 * 1000;
-	const days: number = Math.floor(diff / (24 * 60 * 60 * 1000));
-	diff %= 24 * 60 * 60 * 1000;
-	const hours: number = Math.floor(diff / (60 * 60 * 1000));
-	diff %= 60 * 60 * 1000;
-	const minutes: number = Math.floor(diff / (60 * 1000));
-	diff %= 60 * 1000;
-	const seconds: number = Math.floor(diff / 1000);
-	const milliseconds: number = diff % 1000;
-	console.log({start,
-		end,
-		years,
-		months,
-		days,
-		hours,
-		minutes,
-		seconds,
-		milliseconds,
-		total_days,
-		total_time,});
-	return _get_duration(
-		start,
-		end,
-		years,
-		months,
-		days,
-		hours,
-		minutes,
-		seconds,
-		milliseconds,
-		total_days,
-		total_time,
-	);
+	const end_time: number = end.getTime();
+	const start_time: number = start.getTime();
+	const total_time: number = diff = Math.abs(end_time - start_time);
+	const total_days: number = Math.floor(total_time / DAY_MS);
+	const years = Math.floor(total_time / YEAR_MS);
+	diff %= YEAR_MS;
+	const months: number = Math.floor(diff / MONTH_MS);
+	diff %= MONTH_MS;
+	const days: number = Math.floor(diff / DAY_MS);
+	diff %= DAY_MS;
+	const hours: number = Math.floor(diff / HOUR_MS);
+	diff %= HOUR_MS;
+	const minutes: number = Math.floor(diff / MINUTE_MS);
+	diff %= MINUTE_MS;
+	const seconds: number = Math.floor(diff / SECOND_MS);
+	const milliseconds: number = diff % SECOND_MS;
+	return create_duration(years, months, days, hours, minutes, seconds, milliseconds, total_days, total_time, start_time, end_time);
 };
