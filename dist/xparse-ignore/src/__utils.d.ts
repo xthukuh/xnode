@@ -22,7 +22,7 @@ export declare class ProgTerm {
         label: string;
         format: string | string[];
         mode: -1 | 0 | 1;
-        _clear: boolean;
+        _clear: number;
     };
     /**
      * Get/set progress percent ~ `0-100`

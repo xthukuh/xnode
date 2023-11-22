@@ -25,7 +25,7 @@ export const _date = (value: any, _strict: boolean = true): Date|undefined => {
 	const _parse = (val: any): Date|undefined => !isNaN(val) && (val > 1 || !_strict) ? new Date(val) : undefined;
 	if ([null, false, true, 0].includes(value)) return _parse(value);
 	if (value instanceof Date) return _parse(value.getTime());
-	if (Number.isInteger(value)) return _parse(new Date(value).getTime());
+	if ('number' === typeof value) return _parse(new Date(value).getTime());
 	try {
 		let text: string = String(value).trim();
 		if (!text || /\[object \w+\]/.test(text)) return undefined;

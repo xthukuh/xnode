@@ -143,9 +143,10 @@ export class ProgTerm
 			if (!count) return;
 			for (let i = 0; i < count; i ++){
 				const y: any = i === 0 ? null : -1;
-				if (!i) process.stdout.clearLine(0);
+				// if (!i) process.stdout.clearLine(0);
 				process.stdout.moveCursor(0, y);
-				process.stdout.clearLine(1);
+				// process.stdout.clearLine(1);
+				process.stdout.clearLine(0);
 			}
 			process.stdout.cursorTo(0);
 			this[PROG_TERM_PROPS]._clear = 0;
@@ -162,16 +163,19 @@ export class ProgTerm
 		}
 
 		//-- print progress
-		const print_enabled: boolean = this.mode === -1 ? false : (this.mode === 0 ? this.percent > 0 && this.percent < 100 : true);
+		const pending: boolean = this.percent > 0 && this.percent < 100;
+		const print_enabled: boolean = this.mode === -1 ? false : (this.mode === 0 ? pending : true);
 		if (print_enabled){
 			const prog_line: string = ProgTerm.PROGRESS_LINE, len = prog_line.length;
 			const prog_pos = Math.floor(this.percent/100 * len);
 			const prog_text = '[' + prog_line.substring(0, prog_pos).padEnd(len) + '] ' + this.percent + '%';
-			const print_lines: string[] = [''];
-			if (this.label) print_lines.push(this.label);
-			print_lines.push(prog_text);
-			process.stdout.write(Term.format(this.format, print_lines.join('\n')).values().join(''));
-			this[PROG_TERM_PROPS]._clear = print_lines.length;
+			let print_text: string = pending ? '\n' : '';
+			if (this.label) print_text += this.label + '\n';
+			print_text += prog_text;
+			print_text = Term.format(this.format, print_text).values().join('');
+			const print_lines: number = print_text.split('\n').length;
+			process.stdout.write(print_text);
+			this[PROG_TERM_PROPS]._clear = print_lines;
 		}
 	}
 

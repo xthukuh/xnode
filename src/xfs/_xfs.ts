@@ -113,6 +113,7 @@ export interface IPathInfo {
 	path_full: string,
 	dir: string,
 	dir_full: string,
+	basename: string,
 	target: string,
 	dev: number;
 	mode: number;
@@ -145,7 +146,7 @@ export interface IPathInfo {
  * Get file path stats
  * 
  * @param path - parse path
- * @param mode - parse mode ~ [`0`] - fs.statSync (follows links), `1` - fs.lstatSync, `2` - merged
+ * @param mode - parse mode ~ [`0`] - fs.statSync (follows links), `1` - fs.lstatSync (detect links), `2` - merged
  * @returns `IPathInfo|undefined`
  */
 export const _pathinfo = (path: string, mode: 0|1|2 = 0): IPathInfo|undefined => {
