@@ -25,3 +25,10 @@ export declare const _jsonParse: (value: string, _default?: any) => any;
  * @returns `any` json stringified and parsed value
  */
 export declare const _jsonCopy: <TReturn = any>(value: any) => TReturn;
+/**
+ * Validate object JSON text
+ *
+ * @param value - validate value
+ * @returns `boolean`
+ */
+export declare const _isObjJson: (value: string) => boolean;

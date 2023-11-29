@@ -9,7 +9,7 @@
  * @param _undefined  Default `undefined` argument `value` substitute (default `null`)
  * @returns
  */
-export const _jsonStringify = (value: any, space?: string|number|null|undefined, _undefined: any = null): string => {
+ export const _jsonStringify = (value: any, space?: string|number|null|undefined, _undefined: any = null): string => {
 	const _space: string|number|undefined = space === null ? undefined : space;
 	const parents: any = [];
 	const path: any[] = ['this'];
@@ -95,3 +95,21 @@ export const _jsonParse = (value: string, _default?: any): any => {
  * @returns `any` json stringified and parsed value
  */
 export const _jsonCopy = <TReturn = any>(value: any): TReturn => ('object' === typeof value && value ? _jsonParse(_jsonStringify(value)) : value) as any;
+
+/**
+ * Validate object JSON text
+ * 
+ * @param value - validate value
+ * @returns `boolean`
+ */
+export const _isObjJson = (value: string): boolean => {
+	try {
+		if (!('string' === typeof value && (value = value.trim()))) return false;
+		if (!/^\{.+\}$|^\[.+\]$/s.test(value)) return false;
+		const val: any = _jsonParse(value);
+		return val && Object(val) === val;
+	}
+	catch (e){
+		return false;
+	}
+};
