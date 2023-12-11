@@ -43,89 +43,97 @@ export declare class Term {
         [key: string]: string | string[];
     };
     /**
-     * Get standardized text formats
+     * Parse standard text formats
      *
-     * @param formats Text format(s)
+     * @param formats - text formats
      * @returns `string[]`
      */
-    static get getFormats(): (formats: string | string[]) => string[];
+    static getFormats(formats: string | string[]): string[];
     /**
-     * Text format log arguments
+     * Format text items
      *
-     * @param formats  Text format(s)
-     * @param args  Format values
+     * @param formats - text formats
+     * @param args - parse items (arguments)
      * @returns `ITermFormat`
      */
-    static get format(): (formats: string | string[], ...args: any[]) => ITermFormat;
+    static format(formats: string | string[], ...args: any[]): ITermFormat;
     /**
-     * Clean text value formatting
+     * Clean/remove text formatting
      *
-     * @param args  Formatted values
-     * @returns `any[]` Clear values
+     * @param args - parse items (arguments)
+     * @returns `any[]`
      */
-    static get clean(): (...args: any[]) => any[];
+    static clean(...args: any[]): any[];
     /**
-     * Get formatted text
+     * Format text
      *
-     * @param value  Text value
-     * @param formats  Text format(s)
-     * @returns `string` Formatted
+     * @param value - format text
+     * @param formats - text formats
+     * @returns `string`
      */
-    static get text(): (value: string, formats?: string | string[]) => string;
+    static text(value: string, formats?: string | string[]): string;
     /**
-     * Log empty line ~ `console.log(' ')`
+     * Print line ~ `console.log(' ')`
      */
     static br(): void;
     /**
-     * Log `console.log` format
+     * Print log ~ `console.log(..)`
      *
-     * @param args
+     * @param args - log arguments
      */
     static log(...args: any[]): void;
     /**
-     * Debug `console.debug` format
+     * Print debug ~ `console.debug(..)`
      *
-     * @param args
+     * @param args - log arguments
      */
     static debug(...args: any[]): void;
     /**
-     * Error `console.error` format
+     * Print error ~ `console.error(..)`
      *
-     * @param args
+     * @param args - log arguments
      */
     static error(...args: any[]): void;
     /**
-     * Warn `console.warn` format
+     * Print warning ~ `console.warn(..)`
      *
-     * @param args
+     * @param args - log arguments
      */
     static warn(...args: any[]): void;
     /**
-     * Info `console.info` format
+     * Print info ~ `console.info(..)`
      *
-     * @param args
+     * @param args - log arguments
      */
     static info(...args: any[]): void;
     /**
-     * Success `console.log` format
+     * Print success ~ `console.log('..')`
      *
-     * @param args
+     * @param args - log arguments
      */
     static success(...args: any[]): void;
     /**
-     * Get value list
+     * Parse list items
      *
-     * @param value
-     * @param _entries
+     * @param value - parse value
+     * @param _entries - (default: `false`) whether to parse entries ~ `Object.entries(value)`
+     * @returns `[list: any[], type:'values'|'entries']`
      */
-    static get list(): (value: any, _entries?: boolean) => [list: any[], type: 'values' | 'entries'];
+    static list(value: any, _entries?: boolean): [list: any[], type: 'values' | 'entries'];
     /**
-     * Custom `console.table` logger
+     * ### Print table ~ `console.table`
      *
-     * @param data
-     * @param cellMaxLength
+     * _uses process argument options as default values for params:_
+     * - `cellMaxLength` = `--cellMaxLength=##` (where `##` is positive integer)
+     * - `divider` = `--divider` | `--divider=false`
+     * - `noIndex` = `--noIndex` | `--noIndex=false`
+     *
+     * @param data - log data
+     * @param cellMaxLength - (default: `250`) table max cell length (width)
+     * @param divider - (default: `false`) whether to add row divider
+     * @param noIndex - (default: `false`) whether to remove index column ([#])
      */
-    static get table(): (data: any, cellMaxLength?: number, divider?: boolean) => void;
+    static table(data: any, cellMaxLength?: number, divider?: boolean, noIndex?: boolean): void;
     /**
      * Console clear logs
      */
