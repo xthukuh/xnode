@@ -29,7 +29,6 @@ npm-debug.log
 yarn-error.log
 *.jsbundle
 .vscode/
-*.code-workspace
 *.xx*
 .temp/
 .data/
