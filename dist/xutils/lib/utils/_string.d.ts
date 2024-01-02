@@ -313,20 +313,22 @@ export declare const _cr: (value: any, index?: any, key?: any) => string;
  * Parse key value text ~ escapes/restores values delimiter (i.e. `'='`) and entries delimiter (i.e. `'\n'`)
  *
  * @param value - parse value text (`string`)
- * @param _escape - whether to escape delimiters (default: `false` ~ restore)
- * @param _value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
- * @param _entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
+ * @param escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
+ * @param entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
  * @returns `string`
  */
-export declare const _keyValue: (value: any, _escape?: boolean, _value_delimiter?: string, _entries_delimiter?: string) => string;
+export declare const _keyValue: (value: any, escape?: boolean, value_delimiter?: string, entries_delimiter?: string) => string;
 /**
  * Parse serialized key values ~ (i.e. `'key=value\nkey2=value2'`)
  *
  * @param value - parse serialized text
- * @param _escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
+ * @param entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
  * @returns `[key: string, value: string][]` entries list with unique keys
  */
-export declare const _parseKeyValues: (value: any, _escape?: boolean, _value_delimiter?: string, _entries_delimiter?: string) => [key: string, value: string][];
+export declare const _parseKeyValues: (value: any, escape?: boolean, value_delimiter?: string, entries_delimiter?: string) => [key: string, value: string][];
 /**
  * Serialize key values ~ (i.e. `['key','value','key2','value2']` => `'key=value\nkey2=value2'`)
  *

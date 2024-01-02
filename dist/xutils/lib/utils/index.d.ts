@@ -12,3 +12,4 @@ export * from './_objects';
 export * from './_promise';
 export * from './_queue';
 export * from './_string';
+export * from './_utf8';

@@ -652,34 +652,36 @@ export const _cr = (value: any, index?: any, key?: any): string => {
  * Parse key value text ~ escapes/restores values delimiter (i.e. `'='`) and entries delimiter (i.e. `'\n'`)
  * 
  * @param value - parse value text (`string`)
- * @param _escape - whether to escape delimiters (default: `false` ~ restore)
- * @param _value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
- * @param _entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
+ * @param escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
+ * @param entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
  * @returns `string`
  */
-export const _keyValue = (value: any, _escape: boolean = false, _value_delimiter: string = '=', _entries_delimiter: string = '\n'): string => {
+export const _keyValue = (value: any, escape: boolean = false, value_delimiter: string = '=', entries_delimiter: string = '\n'): string => {
 	if (!(value = _str(value, true))) return value;
-	const vd = '\x1E', value_delimiter = _str(_value_delimiter) || '=';
-	const ed = '\x1D', entries_delimiter = _str(_entries_delimiter) || '\n';
-	if (_escape) return value.replace(new RegExp(value_delimiter, 'g'), vd).replace(new RegExp(entries_delimiter, 'g'), ed);
-	return value.replace(new RegExp(vd, 'g'), value_delimiter).replace(new RegExp(ed, 'g'), entries_delimiter);
+	const vd = '\x1E', value_delim = _str(value_delimiter) || '=';
+	const ed = '\x1D', entries_delim = _str(entries_delimiter) || '\n';
+	if (escape) return value.replace(new RegExp(value_delim, 'g'), vd).replace(new RegExp(entries_delim, 'g'), ed);
+	return value.replace(new RegExp(vd, 'g'), value_delim).replace(new RegExp(ed, 'g'), entries_delim);
 };
 
 /**
  * Parse serialized key values ~ (i.e. `'key=value\nkey2=value2'`)
  * 
  * @param value - parse serialized text
- * @param _escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param escape - whether to escape delimiters (default: `false` ~ restore)
+ * @param value_delimiter - value delimiter (default: `'='` ~ e.g. `'key=value'`)
+ * @param entries_delimiter - entries delimiter (default: `'\n'` ~ e.g. `'key=value\nkey2=value2'`)
  * @returns `[key: string, value: string][]` entries list with unique keys
  */
-export const _parseKeyValues = (value: any, _escape: boolean = false, _value_delimiter: string = '=', _entries_delimiter: string = '\n'): [key: string, value: string][] => {
+export const _parseKeyValues = (value: any, escape: boolean = false, value_delimiter: string = '=', entries_delimiter: string = '\n'): [key: string, value: string][] => {
 	let buffer: {[key: string]: [string, string]} = {}, parse_entries: -1|0|1 = -1; //-1 = undefined, 0 = disabled, 1 = enabled
 	for (let item of _str(value, true).split('\n')){
 		if (!(item = _str(item, true))) continue;
 		const parts: string[] = item.trim().split('=');
 		if (parse_entries < 0) parse_entries = parts.length >= 2 ? 1 : 0;
-		const key: string = _keyValue(parts[0], _escape, _value_delimiter, _entries_delimiter);
-		const value: string = !parse_entries ? key : _keyValue(parts[1], _escape, _value_delimiter, _entries_delimiter);
+		const key: string = _keyValue(parts[0], escape, value_delimiter, entries_delimiter);
+		const value: string = !parse_entries ? key : _keyValue(parts[1], escape, value_delimiter, entries_delimiter);
 		if (key && value) buffer[key.toLowerCase()] = [key, value];
 	}
 	return Object.values(buffer);
