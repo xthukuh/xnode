@@ -209,6 +209,35 @@ export const _pathinfo = (path: string, mode: 0|1|2 = 0): IPathInfo|undefined =>
 };
 
 /**
+ * Check if path is a directory
+ * 
+ * @param path - parse path
+ * @param follow_symlink - follow symlink (default: `true`)
+ * @returns `boolean`
+ */
+export const _is_dir = (path: string, follow_symlink: boolean = true): boolean => {
+	const info: IPathInfo|undefined = _pathinfo(path, follow_symlink ? 0 : 1);
+	return !info ? false : info.isDirectory;
+};
+
+/**
+ * Check if path is a file
+ * 
+ * @param path - parse path
+ * @param follow_symlink - follow symlink (default: `true`)
+ * @returns `boolean`
+ */
+export const _is_file = (path: string, follow_symlink: boolean = true): boolean => !_is_dir(path, follow_symlink);
+
+/**
+ * Check if path is a symbolic link (symlink)
+ * 
+ * @param path - parse path
+ * @returns `boolean`
+ */
+export const _is_link = (path: string): boolean => !!(_pathinfo(path, 1)?.isSymbolicLink);
+
+/**
  * Get directory content paths
  * 
  * @param dir - root directory path

@@ -98,6 +98,29 @@ export interface IPathInfo {
  */
 export declare const _pathinfo: (path: string, mode?: 0 | 1 | 2) => IPathInfo | undefined;
 /**
+ * Check if path is a directory
+ *
+ * @param path - parse path
+ * @param follow_symlink - follow symlink (default: `true`)
+ * @returns `boolean`
+ */
+export declare const _is_dir: (path: string, follow_symlink?: boolean) => boolean;
+/**
+ * Check if path is a file
+ *
+ * @param path - parse path
+ * @param follow_symlink - follow symlink (default: `true`)
+ * @returns `boolean`
+ */
+export declare const _is_file: (path: string, follow_symlink?: boolean) => boolean;
+/**
+ * Check if path is a symbolic link (symlink)
+ *
+ * @param path - parse path
+ * @returns `boolean`
+ */
+export declare const _is_link: (path: string) => boolean;
+/**
  * Get directory content paths
  *
  * @param dir - root directory path
