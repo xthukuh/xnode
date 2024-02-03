@@ -632,41 +632,148 @@ export const _dumpVal = (value: any, maxStrLength: number = 200, first: boolean 
 };
 
 /**
- * Sort array values
+ * Sort mode `enum`
+ */
+export enum SortMode {
+	asc = 'asc',
+	ascending = 'ascending',
+	desc = 'desc',
+	descending = 'descending',
+}
+
+/**
+ * Sort mode `type` ~ `1|-1|'asc'|'desc'|'ascending'|'descending'|SortMode`
+ */
+export type TSortMode = SortMode|`${SortMode}`|1|-1;
+
+/**
+ * Sort order `enum`
+ */
+export enum SortOrder {
+	before = -1,
+	after = 1,
+	equal = 0,
+}
+
+/**
+ * Sort order `type`
+ */
+export type TSortOrder = SortOrder|-1|1|0;
+
+/**
+ * Sort `Array` **slice** values
+ * - returns new array (i.e. `array.slice().sort(...)` does not affect original arrangement)
  * 
- * @param array - array values
- * @param sort - sort (default: `asc`) ~ `1|-1|'asc'|'desc'|{[key: string]: 1|-1|'asc'|'desc'}`
+ * @param array - sort `Array`
+ * @param mode - sort mode
+ * @param onCompare - custom compare callback
+ * @param localeCompareConfig - method config [`String.localeCompare`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare) (default: `{locales:'en',options:{sensitivity:'base'}}`) ~ [options.sensitivity](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)
  * @returns Sorted `T[]`
  */
-export const _sortValues = <T = any>(array: T[], sort?: 1|-1|'asc'|'desc'|{[key:string]:1|-1|'asc'|'desc'}): T[] => {
-	const _compare = (a: any, b: any): number => {
-		if ('string' === typeof a && 'string' === typeof b && 'function' === typeof a?.localeCompare) return a.localeCompare(b);
-		return a > b ? 1 : (a < b ? -1 : 0);
-	};
-	const _direction = (val: any): number => {
-		if ('number' === typeof val) return val >= 0 ? 1 : -1;
-		if ('string' === typeof val){
-			val = val.trim().toLowerCase();
-			if (val.startsWith('asc')) return 1;
-			if (val.startsWith('desc')) return -1;
-		}
-		return 1;
-	};
-	const _method = (): ((a: any, b: any)=>number) => {
-		if (Object(sort) === sort){
-			const entries = Object.entries(sort as any);
-			if (entries.length) return (a, b) => {
-				let i, result;
-				for (result = 0, i = 0; result === 0 || i < entries.length; i ++){
-					const [key, val] = entries[i];
-					result = _compare(a?.[key], b?.[key]) * _direction(val);
+export const _sort = <T = any>(
+	array: T[],
+	mode?: TSortMode|{[key:string]:TSortMode}|[string,TSortMode]|[string,TSortMode][],
+	onCompare?: (a:any,b:any,key?:string)=>TSortOrder|[a:any,b:any],
+	localeCompareConfig?: {locales?:any,options?:any}
+): T[] => {
+
+	try {
+		
+		// parse args
+		const items = [...array].slice();
+		if (!items.length) return items; //<< cancel ~ empty
+		const sort_mode: any = mode;
+		const locale_compare_config: {locales?:any,options?:any} = {
+			locales: localeCompareConfig?.locales || 'en',
+			options: {sensitivity: 'base', ...Object(localeCompareConfig?.options)},
+		};
+		console.debug({locale_compare_config});
+
+		// onCompare callback
+		const _on_compare: undefined|((a:any,b:any,key?:string)=>TSortOrder|[a:any,b:any]) = 'function' === typeof onCompare ? onCompare : undefined;
+		
+		// fn => helper ~ sort compare
+		const _sort_compare = (a: any, b: any, key?: string): number => {
+			let x: any = a, y: any = b;
+			if (_on_compare){
+				const result: any = _on_compare(a, b, key);
+				const val: any = parseInt(result);
+				if ([-1,1,0].includes(val)) return val;
+				x = result?.[0] ?? x;
+				y = result?.[1] ?? y;
+			}
+			let val = 0, str = 0;
+			if ('string' === typeof x && 'string' === typeof y && 'function' === typeof x.localeCompare){
+				str = 1;
+				val = x.localeCompare(y, locale_compare_config.locales, locale_compare_config.options);
+			}
+			else val = x > y ? 1 : x < y ? -1 : 0;
+			return val;
+		};
+
+		// fn => helper ~ sort mode order
+		const _sort_order = (smode: any): number => {
+			let val: any = smode ?? 1;
+			if ('string' === typeof val){
+				if (!(val = val.trim())) return 1;
+				if (val.toLowerCase().startsWith('asc')) return 1;
+				if (val.toLowerCase().startsWith('desc')) return -1;
+			}
+			if ((val = parseInt(val)) === -1) return -1;
+			if (val !== 1) console.warn(`[-] unsupported _sort \`mode\` value (${smode}).`);
+			return 1;
+		};
+
+		// fn => helper ~ do compare
+		const _do_compare = (a: any, b: any, smode: any, key?: string): number => {
+			const scompare = _sort_compare(a, b, key);
+			const sorder = _sort_order(smode);
+			return scompare * sorder;
+		};
+
+		// fn => helper ~ create sort method
+		const _sort_method = ():((a:any,b:any)=>number) => {
+			const sort_map: Map<string, string> = new Map();
+			let entry:[string,string]|undefined = undefined;
+			if (Object(sort_mode) === sort_mode){
+				const _sort_entry = (v: any[], k=''): [string,string]|undefined => Array.isArray(v) && 'string' === typeof v[0] && !!(k = v[0].trim()) ? [k, (v[1] ?? '').trim() || 'asc'] : undefined;
+				if ('function' === typeof sort_mode[Symbol.iterator]){
+					const items: any[] = [...sort_mode];
+					if (!!(entry = _sort_entry(items))) sort_map.set(entry[0], entry[1]); // [string,TSortMode]
+					else for (const item of items){ // [string,TSortMode][]
+						if (!!(entry = _sort_entry(item))) sort_map.set(entry[0], entry[1]);
+					}
 				}
-				return result;
+				else for (const item of Object.entries(sort_mode)){ // {[string]: TSortMode}
+					if (!!(entry = _sort_entry(item))) sort_map.set(entry[0], entry[1])
+				}
+			}
+			if (!sort_map.size) return (a, b) => _do_compare(a, b, sort_mode);
+			const sort_entries: [string,string][] = [...sort_map];
+			return (a, b) => {
+				let after: number = 0; // 1
+				let before: number = 0; // -1
+				let last: number = 0;
+				for (const [key, key_order] of sort_entries){
+					if (!(Object(a).hasOwnProperty(key) || Object(b).hasOwnProperty(key))) continue;
+					const x = a?.[key];
+					const y = b?.[key];
+					const val = _do_compare(x, y, key_order, key);
+					if (val) last = val;
+					if (val === 1) after ++;
+					else if (val === -1) before ++;
+				}
+				if (after && before && after === before) return last;
+				return after > before ? 1 : after < before ? -1 : 0;
 			};
-		}
-		return (a, b) => _compare(a, b) * _direction(sort);
-	};
-	return array.sort(_method());
+		};
+		
+		//<< result ~ sorted items
+		return items.sort(_sort_method());
+	}
+	catch (err){
+		throw new Error(`[-] _sort error: ${err}`);
+	}
 };
 
 /**

@@ -247,15 +247,46 @@ export declare const _values: (value: any, entries?: boolean, object?: boolean, 
  */
 export declare const _dumpVal: (value: any, maxStrLength?: number, first?: boolean) => any;
 /**
- * Sort array values
+ * Sort mode `enum`
+ */
+export declare enum SortMode {
+    asc = "asc",
+    ascending = "ascending",
+    desc = "desc",
+    descending = "descending"
+}
+/**
+ * Sort mode `type` ~ `1|-1|'asc'|'desc'|'ascending'|'descending'|SortMode`
+ */
+export type TSortMode = SortMode | `${SortMode}` | 1 | -1;
+/**
+ * Sort order `enum`
+ */
+export declare enum SortOrder {
+    before = -1,
+    after = 1,
+    equal = 0
+}
+/**
+ * Sort order `type`
+ */
+export type TSortOrder = SortOrder | -1 | 1 | 0;
+/**
+ * Sort `Array` **slice** values
+ * - returns new array (i.e. `array.slice().sort(...)` does not affect original arrangement)
  *
- * @param array - array values
- * @param sort - sort (default: `asc`) ~ `1|-1|'asc'|'desc'|{[key: string]: 1|-1|'asc'|'desc'}`
+ * @param array - sort `Array`
+ * @param mode - sort mode
+ * @param onCompare - custom compare callback
+ * @param localeCompareConfig - method config [`String.localeCompare`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare) (default: `{locales:'en',options:{sensitivity:'base'}}`) ~ [options.sensitivity](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)
  * @returns Sorted `T[]`
  */
-export declare const _sortValues: <T = any>(array: T[], sort?: 1 | -1 | "asc" | "desc" | {
-    [key: string]: 1 | -1 | "asc" | "desc";
-} | undefined) => T[];
+export declare const _sort: <T = any>(array: T[], mode?: TSortMode | {
+    [key: string]: TSortMode;
+} | [string, TSortMode] | [string, TSortMode][] | undefined, onCompare?: ((a: any, b: any, key?: string) => TSortOrder | [a: any, b: any]) | undefined, localeCompareConfig?: {
+    locales?: any;
+    options?: any;
+}) => T[];
 /**
  * Parse transform text template context values
  *
