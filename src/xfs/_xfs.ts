@@ -289,12 +289,13 @@ export const _readLines = async (file: string, handler: (lineContent: string, li
  * @param path  File path
  * @param parse  Parse content to string or JSON decode (default Buffer)
  * @param _default  Default result on parse failure [default: `undefined`]
+ * @param _encoding  The readFileSync encoding argument [default: `undefined`]
  * @returns `T|undefined` Parsed data or `undefined` on failure
  */
-export const _readSync = <T extends any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined): T => {
+export const _readSync = <T=any>(path: string, parse: boolean|'json' = false, _default: T|undefined = undefined, _encoding: any=undefined): T => {
 	try {
 		if ((_pathinfo(path)?.type ?? 0) !== 1) throw new Error(`Invalid read file path. (${path})`);
-		const buffer: any = Fs.readFileSync(path);
+		const buffer: any = Fs.readFileSync(path, _encoding);
 		if (!parse) return buffer;
 		const content: any = buffer.toString();
 		if (parse !== 'json') return content;

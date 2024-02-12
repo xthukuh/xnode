@@ -143,9 +143,10 @@ export declare const _readLines: (file: string, handler: (lineContent: string, l
  * @param path  File path
  * @param parse  Parse content to string or JSON decode (default Buffer)
  * @param _default  Default result on parse failure [default: `undefined`]
+ * @param _encoding  The readFileSync encoding argument [default: `undefined`]
  * @returns `T|undefined` Parsed data or `undefined` on failure
  */
-export declare const _readSync: <T extends unknown>(path: string, parse?: boolean | 'json', _default?: T | undefined) => T;
+export declare const _readSync: <T = any>(path: string, parse?: boolean | 'json', _default?: T | undefined, _encoding?: any) => T;
 /**
  * Write file contents
  *
