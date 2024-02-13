@@ -406,18 +406,21 @@ export class Term
 	 * - `cellMaxLength` = `--cellMaxLength=##` (where `##` is positive integer)
 	 * - `divider` = `--divider` | `--divider=false`
 	 * - `noIndex` = `--noIndex` | `--noIndex=false`
+	 * - `numIndex` = `--numIndex` | `--numIndex=false`
 	 * 
 	 * @param data - log data
 	 * @param cellMaxLength - (default: `250`) table max cell length (width)
 	 * @param divider - (default: `false`) whether to add row divider
 	 * @param noIndex - (default: `false`) whether to remove index column ([#])
+	 * @param numIndex - (default: `false` ~ `0`) whether index column starts from `1`
 	 */
-	static table(data: any, cellMaxLength?: number, divider?: boolean, noIndex?: boolean): void {
+	static table(data: any, cellMaxLength?: number, divider?: boolean, noIndex?: boolean, numIndex?: boolean): void {
 		
 		//args
 		let args_cellMaxLength: number|undefined = undefined;
 		let args_divider: boolean|undefined = undefined;
 		let args_noIndex: boolean|undefined = undefined;
+		let args_numIndex: boolean|undefined = undefined;
 		const args_text: string = process?.argv && Array.isArray(process.argv) ? process.argv.slice(2).join('|') : '';
 		let args_match: RegExpMatchArray|null = args_text.match(/--cellMaxLength=(\d+)(\||$)/);
 		if (args_match) args_cellMaxLength = _posInt(args_match[1], 0);
@@ -425,9 +428,12 @@ export class Term
 		else if (!!(args_match = args_text.match(/--divider=false(\||$)/))) args_divider = false;
 		if (!!(args_match = args_text.match(/--noIndex(\||$)/))) args_noIndex = true;
 		else if (!!(args_match = args_text.match(/--noIndex=false(\||$)/))) args_noIndex = false;
+		if (!!(args_match = args_text.match(/--numIndex(\||$)/))) args_numIndex = true;
+		else if (!!(args_match = args_text.match(/--numIndex=false(\||$)/))) args_numIndex = false;
 		cellMaxLength = args_cellMaxLength ?? _posInt(cellMaxLength, 0) ?? 250;
 		divider = args_divider ?? divider ?? false;
 		noIndex = args_noIndex ?? noIndex ?? false;
+		numIndex = args_numIndex ?? numIndex ?? false;
 
 		//vars
 		const that = this;
@@ -458,7 +464,9 @@ export class Term
 				color = 'magenta';
 			}
 			val = val.replace(/\t/g, '  ');
-			const _val: string = _strEscape(val);
+			const _val: string = _strEscape(val)
+			.replace(/(\\n)+/g, '\n').trim(); //++ multiline support
+			// console.log(_val);
 			return [_val, color];
 		};
 
@@ -496,7 +504,7 @@ export class Term
 			for (let r = 0; r < map_items.length; r ++){
 				const table_item: any[] = [], map_item = map_items[r];
 				for (const key of map_keys) table_item.push(map_item[key]);
-				table_items.push([...(!noIndex ? [r] : []), ...table_item]);
+				table_items.push([...(!noIndex ? [r + (numIndex ? 1 : 0)] : []), ...table_item]);
 			}
 		}
 
@@ -509,9 +517,13 @@ export class Term
 				const val = table_item[i];
 				const [_value, _format] = strVal(val);
 				if (!width_map.hasOwnProperty(i)) width_map[i] = 0;
-				let len = _value.length;
-				if (cellMaxLength && len > cellMaxLength) len = cellMaxLength; //cellMaxLength limit
-				if (len > width_map[i]) width_map[i] = len;
+				let width = 0; //++ multiline support
+				for (const txt of _value.split('\n')){ //++ multiline support
+					let len = txt.length;
+					if (cellMaxLength && len > cellMaxLength) len = cellMaxLength; //cellMaxLength limit
+					if (len > width) width = len;
+				}
+				if (width > width_map[i]) width_map[i] = width; //++ multiline support
 				str_item.push([_value, _format]);
 			}
 			str_items.push(str_item);
@@ -528,15 +540,17 @@ export class Term
 				if (!i || !r) _format = (!i && r && mode === 'values') ? 'gray' : 'white';
 				const width: number = width_map[i];
 				const lines: string[] = [];
-				if (_value.length > width){
-					while (_value.length > width) {
-						const line = _value.substring(0, width).padEnd(width);
-						_value = _value.slice(width);
-						lines.push(that.text(line, _format)); //format
+				for (let txt of _value.split('\n')){ //++ multiline support
+					if (txt.length > width){
+						while (txt.length > width) {
+							const line = txt.substring(0, width).padEnd(width);
+							txt = txt.slice(width);
+							lines.push(that.text(line, _format)); //format
+						}
+						if (txt.length) lines.push(that.text(txt.padEnd(width), _format)); //format
 					}
-					if (_value.length) lines.push(that.text(_value.padEnd(width), _format)); //format
+					else lines.push(that.text(txt.padEnd(width), _format)); //format
 				}
-				else lines.push(that.text(_value.padEnd(width), _format)); //format
 				str_item_lines.push(lines);
 				if (max_lines < lines.length) max_lines = lines.length;
 			}

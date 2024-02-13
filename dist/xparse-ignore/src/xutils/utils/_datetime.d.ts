@@ -11,7 +11,7 @@ export declare const _isDate: (value: any) => boolean;
  * - when strict parsing, value must be a valid date value with more than `1` timestamp milliseconds
  * - when strict parsing is disabled, result for `undefined` = `new Date()` and `null|false|true|0` = `new Date(null|false|true|0)`
  *
- * @param value - parse datetime value
+ * @param value - parse date value
  * @param _strict - enable strict parsing (default: `true`)
  * @returns `Date` instance | `undefined` when invalid
  */
@@ -20,7 +20,7 @@ export declare const _date: (value: any, _strict?: boolean) => Date | undefined;
  * Parsed `Date` timestamp value (i.e. `date.getTime()`)
  * - see `_date()` parsing docs
  *
- * @param value - parse datetime value
+ * @param value - parse date value
  * @param min - set `min` timestamp limit ~ enabled when `min` is a valid timestamp integer
  * @param max - set `max` timestamp limit ~ enabled when `max` is a valid timestamp integer
  * @param _strict - enable strict parsing (default: `true`)
@@ -55,7 +55,7 @@ export declare const _monthName: (index: any) => string;
  * Parse `Date` day start ~ at `00:00:00 0`
  * - see `_date()` parsing docs
  *
- * @param value - parse datetime value
+ * @param value - parse date value ~ **_(defaults to `new Date()` when invalid)_**
  * @param _strict - enable strict datetime parsing (default: `false`)
  * @returns `Date`
  */
@@ -64,7 +64,7 @@ export declare const _dayStart: (value?: any, _strict?: boolean) => Date;
  * Parse `Date` day end ~ at `23:59:59 999`
  * - see `_date()` parsing docs
  *
- * @param value - parse datetime value
+ * @param value - parse date value ~ **_(defaults to `new Date()` when invalid)_**
  * @param _strict - enable strict datetime parsing (default: `false`)
  * @returns `Date`
  */
@@ -73,7 +73,7 @@ export declare const _dayEnd: (value?: any, _strict?: boolean) => Date;
  * Parse `Date` month's start day ~ at `00:00:00 0`
  * - see `_date()` parsing docs
  *
- * @param value - parse datetime value
+ * @param value - parse date value ~ **_(defaults to `new Date()` when invalid)_**
  * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
  * @returns `Date`
  */
@@ -82,20 +82,56 @@ export declare const _monthStart: (value?: any, _strict?: boolean) => Date;
  * Parse `Date` month's end day ~ at `23:59:59 999`
  * - see `_date()` parsing docs
  *
- * @param value - parse datetime value
+ * @param value - parse date value ~ **_(defaults to `new Date()` when invalid)_**
  * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
  * @returns `Date`
  */
 export declare const _monthEnd: (value?: any, _strict?: boolean) => Date;
 /**
- * Parse `Date` value to `datetime` format (i.e. `2023-05-27 22:11:57` ~ `YYYY-MM-DD HH:mm:ss`)
+ * Parse `Date` year's start day ~ at `YYYY-01-01 00:00:00 0`
  * - see `_date()` parsing docs
  *
- * @param value - parse datetime value
+ * @param value - parse date value ~ **_(defaults to `new Date()` when invalid)_**
  * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
- * @returns `string` ~ formatted `YYYY-MM-DD HH:mm:ss` | empty `''` when invalid
+ * @returns `Date`
+ */
+export declare const _yearStart: (value?: any, _strict?: boolean) => Date;
+/**
+ * Parse `Date` year's end day ~ at `YYYY-12-31 23:59:59 999`
+ * - see `_date()` parsing docs
+ *
+ * @param value - parse date value ~ **_(defaults to `new Date()` when invalid)_**
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `Date`
+ */
+export declare const _yearEnd: (value?: any, _strict?: boolean) => Date;
+/**
+ * Parse `Date` value to `YYYY-MM-DD HH:mm:ss` format (e.g. `'2023-05-27 22:11:57'`)
+ * - see `_date()` parsing docs
+ *
+ * @param value - parse date value
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `string` ~ `'YYYY-MM-DD HH:mm:ss'` | empty `''` when invalid
  */
 export declare const _datetime: (value?: any, _strict?: boolean) => string;
+/**
+ * Parse `Date` value to `YYYY-MM-DD` format `string` (e.g. `'2023-05-27'`)
+ * - see `_date()` parsing docs
+ *
+ * @param value - parse date value
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `string` ~ `'YYYY-MM-DD'` | empty `''` when invalid
+ */
+export declare const _datestr: (value?: any, _strict?: boolean) => string;
+/**
+ * Parse `Date` value to `HH:mm:ss` format `string` (e.g. `'22:11:57'`)
+ * - see `_date()` parsing docs
+ *
+ * @param value - parse date value
+ * @param _strict - enable strict datetime parsing (default: `false`) ~ see `_date()`
+ * @returns `string` ~ `'HH:mm:ss'` | empty `''` when invalid
+ */
+export declare const _timestr: (value?: any, _strict?: boolean) => string;
 /**
  * Parse ISO formatted date value to milliseconds timestamp
  * - borrowed from https://github.com/jquense/yup/blob/1ee9b21c994b4293f3ab338119dc17ab2f4e284c/src/util/parseIsoDate.ts

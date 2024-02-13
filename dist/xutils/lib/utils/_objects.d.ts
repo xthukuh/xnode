@@ -380,3 +380,11 @@ export declare const _propsObj: (value: any, props?: any[], _omit?: boolean, _un
     [key: number]: any;
     [key: symbol]: any;
 };
+/**
+ * Split `T[]` array values into `T[][]` chunks array
+ *
+ * @param array - parse iterable/spreadable array
+ * @param size - split array chunk length (default: `1`) ~ **_(`0` returns `[[...array]]`)_**
+ * @returns `T[][]`
+ */
+export declare const _chunks: <T = any>(array: T[], size?: number) => T[][];

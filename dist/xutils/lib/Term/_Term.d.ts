@@ -127,13 +127,15 @@ export declare class Term {
      * - `cellMaxLength` = `--cellMaxLength=##` (where `##` is positive integer)
      * - `divider` = `--divider` | `--divider=false`
      * - `noIndex` = `--noIndex` | `--noIndex=false`
+     * - `numIndex` = `--numIndex` | `--numIndex=false`
      *
      * @param data - log data
      * @param cellMaxLength - (default: `250`) table max cell length (width)
      * @param divider - (default: `false`) whether to add row divider
      * @param noIndex - (default: `false`) whether to remove index column ([#])
+     * @param numIndex - (default: `false` ~ `0`) whether index column starts from `1`
      */
-    static table(data: any, cellMaxLength?: number, divider?: boolean, noIndex?: boolean): void;
+    static table(data: any, cellMaxLength?: number, divider?: boolean, noIndex?: boolean, numIndex?: boolean): void;
     /**
      * Console clear logs
      */

@@ -938,3 +938,18 @@ export const _propsObj = (value: any, props?: any[], _omit: boolean = false, _un
 		return prev;
 	}, {});
 };
+
+/**
+ * Split `T[]` array values into `T[][]` chunks array
+ * 
+ * @param array - parse iterable/spreadable array
+ * @param size - split array chunk length (default: `1`) ~ **_(`0` returns `[[...array]]`)_**
+ * @returns `T[][]`
+ */
+export const _chunks = <T = any>(array: T[], size: number = 1): T[][] => {
+	const items: T[] = [...array], chunks: T[][] = [], len: number = parseInt(size as any) || 0;
+	if (len < 0) throw new TypeError(`Invalid \`_chunks\` \`chunk_length\` argument value (${size}).`);
+	if (!len) return [items];
+	for (let i = 0; i < items.length; i += len) chunks.push(items.slice(i, i + len));
+	return chunks;
+};
