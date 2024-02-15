@@ -1,13 +1,13 @@
 /**
- * AlphaPos private props key
+ * AlphaNum private props key
  */
 declare const PROPS: unique symbol;
 /**
  * Alphabetical integer
  *
- * @class AlphaInt
+ * @class AlphaNum
  */
-export declare class AlphaInt {
+export declare class AlphaNum {
     /**
      * Alphabet characters
      */
@@ -32,7 +32,7 @@ export declare class AlphaInt {
      */
     get indexes(): number[];
     /**
-     * `indexes` getter
+     * `indexes` setter
      */
     set indexes(value: number[]);
     /**
@@ -49,16 +49,16 @@ export declare class AlphaInt {
      * Set `value`
      *
      * @param value - add value ~ _**absolute integer**_
-     * @returns `AlphaInt` ~ instance
+     * @returns `AlphaNum` ~ instance
      */
-    set(value: number): AlphaInt;
+    set(value: number): AlphaNum;
     /**
      * Add `value`
      *
      * @param value - (default: `1`) add value ~ _**absolute integer**_
-     * @returns `AlphaInt` ~ instance
+     * @returns `AlphaNum` ~ instance
      */
-    add(value?: number): AlphaInt;
+    add(value?: number): AlphaNum;
     /**
      * Get text value
      *
@@ -66,10 +66,23 @@ export declare class AlphaInt {
      */
     toString(): string;
     /**
-     * Parse `AlphaInt` text (i.e. 'BXX')
-     * @param value
-     * @returns
+     * Parse value to `AlphaNum` instance
+     * - accepts `number` ~ integers (e.g. `1999` => `'BXX'`; `-1999` => `'-BXX'`)
+     * - accepts `text` `/-?[A-Z]+/` (e.g. `'BXX'` => `1999`; `'-BXX'` => `-1999`)
+     * - accepts indexes `array` (e.g. `[1,23,23]` => `'BXX'`|`1999`; `[-1,1,23,23]` => `'-BXX'`|`-1999`)
+     *
+     * @param value - parse value _**(see method docs for acceptable values)**_
+     * @returns `AlphaNum` instance
+     * @throws `TypeError` on failure
      */
-    static parse(value: any): AlphaInt;
+    static parse(value: any): AlphaNum;
+    /**
+     * Parse value to `AlphaNum` text ~ `/-?[A-Z]+/` (e.g. `49` => `'AX'`; `49` => `'-AX'`)
+     *
+     * @param value - parse value _**(see parse() docs)**_
+     * @returns `string`
+     * @throws `TypeError` on failure
+     */
+    static text(value: any): string;
 }
 export {};

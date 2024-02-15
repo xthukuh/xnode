@@ -632,33 +632,14 @@ export const _dumpVal = (value: any, maxStrLength: number = 200, first: boolean 
 };
 
 /**
- * Sort mode `enum`
+ * Sort mode `type` ~ `1|-1|'asc'|'desc'|'ascending'|'descending'`
  */
-export enum SortMode {
-	asc = 'asc',
-	ascending = 'ascending',
-	desc = 'desc',
-	descending = 'descending',
-}
+export type TSortMode = 1|-1|'asc'|'desc'|'ascending'|'descending';
 
 /**
- * Sort mode `type` ~ `1|-1|'asc'|'desc'|'ascending'|'descending'|SortMode`
+ * Sort order `type` ~ `-1` (before) | `1` (after) | `0` (equal)
  */
-export type TSortMode = SortMode|`${SortMode}`|1|-1;
-
-/**
- * Sort order `enum`
- */
-export enum SortOrder {
-	before = -1,
-	after = 1,
-	equal = 0,
-}
-
-/**
- * Sort order `type`
- */
-export type TSortOrder = SortOrder|-1|1|0;
+export type TSortOrder = -1|1|0;
 
 /**
  * Sort `Array` **slice** values
@@ -687,7 +668,6 @@ export const _sort = <T = any>(
 			locales: localeCompareConfig?.locales || 'en',
 			options: {sensitivity: 'base', ...Object(localeCompareConfig?.options)},
 		};
-		console.debug({locale_compare_config});
 
 		// onCompare callback
 		const _on_compare: undefined|((a:any,b:any,key?:string)=>TSortOrder|[a:any,b:any]) = 'function' === typeof onCompare ? onCompare : undefined;
@@ -952,4 +932,93 @@ export const _chunks = <T = any>(array: T[], size: number = 1): T[][] => {
 	if (!len) return [items];
 	for (let i = 0; i < items.length; i += len) chunks.push(items.slice(i, i + len));
 	return chunks;
+};
+
+/**
+ * Get objects array with keys selection
+ * 
+ * @param array - parse iterable/spreadable objects array `{[key:string]:any}[]`
+ * @param keys - select keys `string[]`
+ * @param omit - (default: `false`) `false` disabled, `true` omit select keys, `string[]` omit keys
+ * @param filled_only - (default: `false`) omit keys that are empty values in all `array` items or omit item that have empty values in all keys
+ * @returns `{[key:string]:any}[]` selection
+ */
+export const _selectKeys = (array: {[key:string]:any}[], keys: string[], omit: string[]|boolean = false, filled_only: boolean = false): {[key:string]:any}[] => {
+	
+	//fn => helper - get keys
+	const _get_keys = (val: any, label: string = 'keys'): string[] => {
+		if (!('object' === typeof val && val)) return [];
+		try {
+			return [...new Set([...val])];
+		} catch (error) {
+			console.warn(`[-] invalid \`_selectKeys\` ${label} string array object.`);
+			return [];
+		}
+	};
+
+	//normalize args
+	array = [...array];
+	keys = _get_keys(keys);
+	const omits: string[] = [];
+	if (!!omit){
+		if (omit === true){
+			omits.push(...keys);
+			keys = [];
+		}
+		else omits.push(..._get_keys(omit, 'omit'));
+	}
+	filled_only = !!filled_only;
+
+	//parse array > check unfilled > skip ommited keys
+	const items: {[key:string]:any}[] = [];
+	const filled: Set<string> = new Set(), unfilled: {[key: string]: number} = {};
+	const keys_object: {[key:string]:any} = keys.length ? Object.fromEntries(keys.map(k => [k, undefined])) : {};
+	for (const obj of array){
+		if (Object(obj) !== obj) continue;
+		const item: {[key:string]:any} = {};
+		for (const [key, val] of Object.entries({...keys_object, ...obj})){
+			if (filled_only && !filled.has(key)){ //filled check
+				if (_empty(val, true)){
+					if (!unfilled.hasOwnProperty(key)) unfilled[key] = 1;
+				}
+				else {
+					if (unfilled.hasOwnProperty(key)) delete unfilled[key];
+					filled.add(key);
+				}
+			}
+			if (omits.includes(key)) continue; //skip omitted
+			item[key] = val;
+		}
+		items.push(item); //+buffer add
+	}
+
+	//set selected > omit unfilled
+	const selected: {[key:string]:any}[] = [];
+	const unfilled_keys: string[] = Object.keys(unfilled);
+	for (const item of items){
+		if (keys.length){
+			let unfilled: number = 0;
+			const entries: [string,any][] = [];
+			for (const k of keys){
+				if (omits.includes(k)) continue; //skip omitted
+				if (unfilled_keys.includes(k)) continue; //skip unfilled
+				if (filled_only && _empty(item[k], true)) unfilled ++;
+				entries.push([k, item[k]]);
+			}
+			if (entries.length && entries.length !== unfilled) selected.push(Object.fromEntries(entries));
+			continue;
+		}
+		let unfilled: number = 0;
+		const entries: [string,any][] = [];
+		const item_entries: [string,any][] = Object.entries(item);
+		for (const [key, val] of item_entries){
+			if (unfilled_keys.includes(key)) continue; //skip unfilled
+			if (filled_only && _empty(val, true)) unfilled ++;
+			entries.push([key, val]);
+		}
+		if (entries.length && entries.length !== unfilled) selected.push(Object.fromEntries(entries));
+	}
+
+	//<< result - selected
+	return selected;
 };

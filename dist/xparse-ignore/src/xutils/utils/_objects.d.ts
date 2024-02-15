@@ -247,30 +247,13 @@ export declare const _values: (value: any, entries?: boolean, object?: boolean, 
  */
 export declare const _dumpVal: (value: any, maxStrLength?: number, first?: boolean) => any;
 /**
- * Sort mode `enum`
+ * Sort mode `type` ~ `1|-1|'asc'|'desc'|'ascending'|'descending'`
  */
-export declare enum SortMode {
-    asc = "asc",
-    ascending = "ascending",
-    desc = "desc",
-    descending = "descending"
-}
+export type TSortMode = 1 | -1 | 'asc' | 'desc' | 'ascending' | 'descending';
 /**
- * Sort mode `type` ~ `1|-1|'asc'|'desc'|'ascending'|'descending'|SortMode`
+ * Sort order `type` ~ `-1` (before) | `1` (after) | `0` (equal)
  */
-export type TSortMode = SortMode | `${SortMode}` | 1 | -1;
-/**
- * Sort order `enum`
- */
-export declare enum SortOrder {
-    before = -1,
-    after = 1,
-    equal = 0
-}
-/**
- * Sort order `type`
- */
-export type TSortOrder = SortOrder | -1 | 1 | 0;
+export type TSortOrder = -1 | 1 | 0;
 /**
  * Sort `Array` **slice** values
  * - returns new array (i.e. `array.slice().sort(...)` does not affect original arrangement)
@@ -388,3 +371,17 @@ export declare const _propsObj: (value: any, props?: any[], _omit?: boolean, _un
  * @returns `T[][]`
  */
 export declare const _chunks: <T = any>(array: T[], size?: number) => T[][];
+/**
+ * Get objects array with keys selection
+ *
+ * @param array - parse iterable/spreadable objects array `{[key:string]:any}[]`
+ * @param keys - select keys `string[]`
+ * @param omit - (default: `false`) `false` disabled, `true` omit select keys, `string[]` omit keys
+ * @param filled_only - (default: `false`) omit keys that are empty values in all `array` items or omit item that have empty values in all keys
+ * @returns `{[key:string]:any}[]` selection
+ */
+export declare const _selectKeys: (array: {
+    [key: string]: any;
+}[], keys: string[], omit?: string[] | boolean, filled_only?: boolean) => {
+    [key: string]: any;
+}[];
