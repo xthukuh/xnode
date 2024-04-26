@@ -777,7 +777,7 @@ export const _strKeyValues = (values: any, _key?: any, _value?: any, _value_deli
 export const _wrapLines = (text: any, max_length: number = 0, word_break: boolean = false, onAddLine?: (line:string,lines_buffer:string[])=>string|undefined): string[] => {
 	const _onAddLine: ((line:string,lines_buffer:string[])=>string|undefined)|undefined = 'function' === typeof onAddLine ? onAddLine : undefined;
 	const max: number = Number.isInteger(max_length = parseInt(max_length as any)) && max_length >= 0 ? max_length : 0;
-	let lines_buffer: string[] = [], buffer_length: number = 0, line_buffer: string = '';
+	let lines_buffer: string[] = [], line_buffer: string[] = [];
 	const _add_line = (line: string): void => {
 		if (_onAddLine){
 			const res: any = _onAddLine(line, lines_buffer);
@@ -789,8 +789,7 @@ export const _wrapLines = (text: any, max_length: number = 0, word_break: boolea
 	const _parse_line = (line: string) => {
 		if (!max) return _add_line(line);
 		const _line_buffer_add = (word: string) => {
-			const space: string = (line_buffer.length ? ' ' : '');
-			const line_text: string = line_buffer + space + word;
+			const line_text: string = [...line_buffer, word].join(' ');
 			if (line_text.length > max){
 				if (word_break){ //-- word break
 					let val: string = '', offset: number = 0;
@@ -798,7 +797,7 @@ export const _wrapLines = (text: any, max_length: number = 0, word_break: boolea
 						_add_line(val);
 						offset += max;
 					}
-					line_buffer = val;
+					line_buffer = [val];
 				}
 				else {
 					if (word.length > max){ //-- word break ~ longer than max
@@ -807,26 +806,26 @@ export const _wrapLines = (text: any, max_length: number = 0, word_break: boolea
 							_add_line(val);
 							offset += max;
 						}
-						line_buffer = val;
+						line_buffer = [val];
 					}
 					else { //-- wrap word
-						if (line_buffer) _add_line(line_buffer + space);
-						if ((line_buffer = word).length === max){
-							_add_line(line_buffer);
-							line_buffer = '';
+						if (line_buffer.length) _add_line([...line_buffer, ''].join(' '));
+						if ((line_buffer = [word]).join(' ').length === max){
+							_add_line(line_buffer.join(' '));
+							line_buffer = [];
 						}
 					}
 				}
 			}
 			else if (line_text.length === max){
 				_add_line(line_text);
-				line_buffer = '';
+				line_buffer = [];
 			}
-			else line_buffer = line_text;
+			else line_buffer = [line_text];
 		};
 		for (const word of line.split(' ')) _line_buffer_add(word);
 	};
 	for (const line of _str(text).split('\n')) _parse_line(line);
-	if (line_buffer) _add_line(line_buffer);
+	if (line_buffer) _add_line(line_buffer.join(' '));
 	return lines_buffer;
 };

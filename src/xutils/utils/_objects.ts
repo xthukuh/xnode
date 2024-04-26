@@ -1,7 +1,7 @@
 import { bool } from '../types';
 import { _jsonCopy, _jsonParse, _jsonStringify } from './_json';
 import { _int, _num, _posInt } from './_number';
-import { _errorText, _str, _string, _stringable } from './_string';
+import { _errorText, _str, _string, _stringable, _textMaxLength, _wrapLines } from './_string';
 import { _isBuffer } from '../3rd-party';
 
 /**
@@ -1021,4 +1021,61 @@ export const _selectKeys = (array: {[key:string]:any}[], keys: string[], omit: s
 
 	//<< result - selected
 	return selected;
+};
+
+/**
+ * Dump tree structure
+ * 
+ * @param value - parse value
+ * @param blanks - ignore blank key values ~ i.e. `null|undefined|''` (default: `false`)
+ * @param max_length - max text value length (default: `100`)
+ * @param wrap_length - text value wrap break length (default: `100`)
+ * @param word_break - whether to use word break (default `false`)
+ * @returns 
+ */
+export const _tree = (value: any, blanks: boolean = false, max_length: number = 200, wrap_length: number = 100, word_break: boolean = false): string => {
+	const _parse = (val: any): string|{[key: string]: any} => {
+		if ([null, undefined].includes(val)) return String(val);
+		if (['boolean', 'number'].includes(typeof val)) return String(val);
+		if (Object(val) !== val) return _jsonStringify(_str(val, true));
+		const it = val[Symbol.iterator], iterable = Object(it) === it;
+		if (!iterable && _stringable(val)) return _str(val, true);
+		if (!Object.entries(val = _jsonCopy(val)).length) return iterable ? '[]' : '{}';
+		return val;
+	};
+	const _lines = (val: any): {type:'node'|'value',lines:string[]} => {
+		const lines: string[] = [];
+		const node = '├───', node_end = '└───', node_space = '    ', node_border = '│   ', reg_quotes = /^\"(.*)\"$/gs;
+		if ('string' === typeof (val = _parse(val))) return {type: 'value', lines: [val]};
+		const entries: [string, any][] = Object.entries(val), len = entries.length;
+		for (let i = 0; i < len; i ++){
+			const [k, v] = entries[i], last = i + 1 === len;
+			lines.push(`${last ? node_end : node}${k}`);
+			if (!blanks && [undefined, null, k].includes(v)) continue;
+			const key_node: string = last ? node_space : node_border;
+			const {type, lines: v_lines} = _lines(v), v_len = v_lines.length;
+			if (!blanks && type === 'value' && !v_lines[0]) continue;
+			for (let x = 0; x < v_len; x ++){
+				const v_last = x + 1 === v_len;
+				let text: string = v_lines[x];
+				if (type === 'value'){
+					let quoted = reg_quotes.test(text);
+					if (quoted) text = text.replace(reg_quotes, '$1');
+					text = _textMaxLength(text, max_length, 2);
+					if (quoted) text = `"${text}"`;
+					const wrap_lines: string[] = _wrapLines(text, wrap_length, word_break);
+					const text_node: string = v_last ? node_end : node;
+					for (let n = 0; n < wrap_lines.length; n ++){
+						const wrap_node: string = !n ? text_node : (v_last ? node_space : node_border);
+						const wrap_line: string = wrap_lines[n];
+						lines.push(`${key_node}${wrap_node}${wrap_line}`);
+					}
+				}
+				else lines.push(`${key_node}${text}`);
+			}
+		}
+		return {type: 'node', lines};
+	};
+	const {lines} = _lines(value);
+	return lines.join('\n');
 };
