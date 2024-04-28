@@ -1024,37 +1024,96 @@ export const _selectKeys = (array: {[key:string]:any}[], keys: string[], omit: s
 };
 
 /**
+ * Tree options interface
+ */
+export interface ITreeOptions {
+	
+	/**
+	 * Tree name ~ root node label
+	 */
+	name?: string;
+
+	/**
+	 * String line start padding length
+	 */
+	pad?: number;
+
+	/**
+	 * ignore blank key values ~ i.e. `null|undefined|''` (default: `false`)
+	 */
+	blanks?: boolean;
+
+	/**
+	 * max text value length (default: `200`)
+	 */
+	max_length?: number;
+
+	/**
+	 * text value wrap break length (default: `56`)
+	 */
+	wrap_length?: number;
+
+	/**
+	 * whether to use word break (default `false`)
+	 */
+	word_break?: boolean;
+}
+
+/**
  * Dump tree structure
  * 
  * @param value - parse value
- * @param blanks - ignore blank key values ~ i.e. `null|undefined|''` (default: `false`)
- * @param max_length - max text value length (default: `100`)
- * @param wrap_length - text value wrap break length (default: `100`)
- * @param word_break - whether to use word break (default `false`)
- * @returns 
+ * @param options - `ITreeOptions` ~ _(see ITreeOptions docs)_
+ * @returns `string`
  */
-export const _tree = (value: any, blanks: boolean = false, max_length: number = 200, wrap_length: number = 100, word_break: boolean = false): string => {
+export const _tree = (value: any, options?: ITreeOptions): string => {
+	const {
+		name: _name = '',
+		pad: _pad = 0,
+		blanks = false,
+		max_length = 200,
+		wrap_length = 80,
+		word_break = false,
+	} = Object(options);
+	let pad: number = _posInt(_pad, 0) ?? 0, name: string = _str(_name, true);
+	if (name.length){
+		name = `[${name}]`;
+		pad += 3;
+	}
 	const _parse = (val: any): string|{[key: string]: any} => {
 		if ([null, undefined].includes(val)) return String(val);
 		if (['boolean', 'number'].includes(typeof val)) return String(val);
 		if (Object(val) !== val) return _jsonStringify(_str(val, true));
-		const it = val[Symbol.iterator], iterable = Object(it) === it;
+		const it: any = val[Symbol.iterator], iterable: boolean = Object(it) === it;
 		if (!iterable && _stringable(val)) return _str(val, true);
 		if (!Object.entries(val = _jsonCopy(val)).length) return iterable ? '[]' : '{}';
 		return val;
 	};
 	const _lines = (val: any): {type:'node'|'value',lines:string[]} => {
-		const lines: string[] = [];
 		const node = '├───', node_end = '└───', node_space = '    ', node_border = '│   ', reg_quotes = /^\"(.*)\"$/gs;
+		const lines: string[] = [];
 		if ('string' === typeof (val = _parse(val))) return {type: 'value', lines: [val]};
 		const entries: [string, any][] = Object.entries(val), len = entries.length;
+		const it: any = val[Symbol.iterator], iterable: boolean = Object(it) === it;
 		for (let i = 0; i < len; i ++){
-			const [k, v] = entries[i], last = i + 1 === len;
-			lines.push(`${last ? node_end : node}${k}`);
-			if (!blanks && [undefined, null, k].includes(v)) continue;
-			const key_node: string = last ? node_space : node_border;
-			const {type, lines: v_lines} = _lines(v), v_len = v_lines.length;
-			if (!blanks && type === 'value' && !v_lines[0]) continue;
+			const [k, v] = entries[i] as [string, any], last: boolean = i + 1 === len;
+			let skip: boolean = false;
+			if (!blanks && [undefined, null, k].includes(v)) skip = true;
+			let type: 'node'|'value' = 'value', v_lines: string[] = [], v_len: number = 0;
+			if (!skip){
+				const res = _lines(v);
+				type = res.type;
+				v_lines = res.lines;
+				v_len = v_lines.length;
+				if (!blanks && type === 'value' && !v_lines[0]) skip = true;
+			}
+			const is_list: boolean = iterable && it.name !== 'entries' && Number.isInteger(Number(k)) && Number(k) >= 0;
+			const key = is_list ? `[${k}]` : k, list_value: boolean = is_list && type === 'value';
+			if (!(skip && list_value)) lines.push(list_value ? `${last ? node_end : node}${key}` : `${last ? node_end : node}${key}`);
+			if (skip) continue;
+			const key_pad: string = list_value ? ''.padStart(`[${k}]`.length + 1) : '';
+			const key_node: string = (last ? node_space : node_border) + key_pad;
+			const proc_len: number = Number.isInteger(process?.stdout?.columns) && key_node.length < (process.stdout.columns/2) ? process.stdout.columns : 0;
 			for (let x = 0; x < v_len; x ++){
 				const v_last = x + 1 === v_len;
 				let text: string = v_lines[x];
@@ -1063,12 +1122,17 @@ export const _tree = (value: any, blanks: boolean = false, max_length: number = 
 					if (quoted) text = text.replace(reg_quotes, '$1');
 					text = _textMaxLength(text, max_length, 2);
 					if (quoted) text = `"${text}"`;
-					const wrap_lines: string[] = _wrapLines(text, wrap_length, word_break);
+					const wrap_len: number = proc_len ? (proc_len-key_node.length)/2 : wrap_length;
+					const wrap_lines: string[] = _wrapLines(text, wrap_len, word_break);
 					const text_node: string = v_last ? node_end : node;
 					for (let n = 0; n < wrap_lines.length; n ++){
-						const wrap_node: string = !n ? text_node : (v_last ? node_space : node_border);
+						const wrap_node: string = list_value ? (!n ? ' ' : key_node) : (!n ? text_node : (v_last ? node_space : node_border));
 						const wrap_line: string = wrap_lines[n];
-						lines.push(`${key_node}${wrap_node}${wrap_line}`);
+						if (list_value){
+							if (!n) lines.push(lines.pop() + wrap_node + wrap_line);
+							else lines.push(wrap_node + wrap_line);
+						}
+						else lines.push(key_node + wrap_node + wrap_line);
 					}
 				}
 				else lines.push(`${key_node}${text}`);
@@ -1077,5 +1141,5 @@ export const _tree = (value: any, blanks: boolean = false, max_length: number = 
 		return {type: 'node', lines};
 	};
 	const {lines} = _lines(value);
-	return lines.join('\n');
+	return '\n' + (name ? `${name}\n` : '') + lines.map(line => pad > 0 ? ''.padStart(pad) + line : line).join('\n');
 };

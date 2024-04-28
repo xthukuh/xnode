@@ -386,13 +386,39 @@ export declare const _selectKeys: (array: {
     [key: string]: any;
 }[];
 /**
+ * Tree options interface
+ */
+export interface ITreeOptions {
+    /**
+     * Tree name ~ root node label
+     */
+    name?: string;
+    /**
+     * String line start padding length
+     */
+    pad?: number;
+    /**
+     * ignore blank key values ~ i.e. `null|undefined|''` (default: `false`)
+     */
+    blanks?: boolean;
+    /**
+     * max text value length (default: `200`)
+     */
+    max_length?: number;
+    /**
+     * text value wrap break length (default: `56`)
+     */
+    wrap_length?: number;
+    /**
+     * whether to use word break (default `false`)
+     */
+    word_break?: boolean;
+}
+/**
  * Dump tree structure
  *
  * @param value - parse value
- * @param blanks - ignore blank key values ~ i.e. `null|undefined|''` (default: `false`)
- * @param max_length - max text value length (default: `100`)
- * @param wrap_length - text value wrap break length (default: `100`)
- * @param word_break - whether to use word break (default `false`)
- * @returns
+ * @param options - `ITreeOptions` ~ _(see ITreeOptions docs)_
+ * @returns `string`
  */
-export declare const _tree: (value: any, blanks?: boolean, max_length?: number, wrap_length?: number, word_break?: boolean) => string;
+export declare const _tree: (value: any, options?: ITreeOptions) => string;
