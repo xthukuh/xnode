@@ -1113,7 +1113,7 @@ export const _tree = (value: any, options?: ITreeOptions): string => {
 			if (skip) continue;
 			const key_pad: string = list_value ? ''.padStart(`[${k}]`.length + 1) : '';
 			const key_node: string = (last ? node_space : node_border) + key_pad;
-			const proc_len: number = Number.isInteger(process?.stdout?.columns) && key_node.length < (process.stdout.columns/2) ? process.stdout.columns : 0;
+			const proc_len: number = typeof process !== 'undefined' && Number.isInteger(process?.stdout?.columns) && key_node.length < (process.stdout.columns/2) ? process.stdout.columns : 0;
 			for (let x = 0; x < v_len; x ++){
 				const v_last = x + 1 === v_len;
 				let text: string = v_lines[x];

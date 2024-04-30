@@ -421,7 +421,7 @@ export class Term
 		let args_divider: boolean|undefined = undefined;
 		let args_noIndex: boolean|undefined = undefined;
 		let args_numIndex: boolean|undefined = undefined;
-		const args_text: string = process?.argv && Array.isArray(process.argv) ? process.argv.slice(2).join('|') : '';
+		const args_text: string = typeof process !== 'undefined' && Array.isArray(process?.argv) ? process.argv.slice(2).join('|') : '';
 		let args_match: RegExpMatchArray|null = args_text.match(/--cellMaxLength=(\d+)(\||$)/);
 		if (args_match) args_cellMaxLength = _posInt(args_match[1], 0);
 		if (!!(args_match = args_text.match(/--divider(\||$)/))) args_divider = true;
