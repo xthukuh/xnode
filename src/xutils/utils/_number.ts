@@ -362,3 +362,55 @@ export const _base2dec = (value: string, base: 2|8|16 = 2): number|undefined => 
 	else if (base === 8) return _oct2dec(value);
 	return _hex2dec(value);
 };
+
+/**
+ * Convert degree to [radian](https://en.wikipedia.org/wiki/Radian)
+ * - `2π rad = 360°` ∴ `radian = degree * π/180`
+ * 
+ * @param degrees - angle in degrees (i.e. 0 - 360°)
+ * @returns `number` - radian
+ */
+export const _deg2rad = (degrees: number): number => {
+	if (isNaN(degrees = _num(degrees))) throw new TypeError('The _deg2rad `degrees` argument is not a valid angle number value.');
+	return degrees * (Math.PI / 180);
+};
+
+/**
+ * Convert radian to [degree](https://en.wikipedia.org/wiki/Degree_(angle))
+ * - `2π rad = 360°` ∴ `radian = degree * π/180`
+ * 
+ * @param radians - angle in radians (i.e. 0 - 360°)
+ * @returns `number` - degree
+ */
+export const _rad2deg = (radians: number): number => {
+	if (isNaN(radians = _num(radians))) throw new TypeError('The _rad2deg `radians` argument is not a valid angle number value.');
+	return radians * (180 / Math.PI);
+};
+
+/**
+ * Get distance in meters between two latitude and longitude coordinates
+ * 
+ * @param latitude1 - first coordinate latitude `number`
+ * @param longitude1 - first coordinate longitude `number`
+ * @param latitude2 - second coordinate latitude `number`
+ * @param longitude2 - second coordinate longitude `number`
+ * @returns `number` `m` distance
+ * @throws `TypeError` when coorinate argument value is `NaN`
+ */
+export const _distance = (latitude1: number, longitude1: number, latitude2: number, longitude2: number): number => {
+	if (isNaN(latitude1 = _num(latitude1))) throw new TypeError('The _latLonDistance `latitude1` argument is not a valid latitude number value.');
+	if (isNaN(longitude1 = _num(longitude1))) throw new TypeError('The _latLonDistance `longitude1` argument is not a valid longitude number value.');
+	if (isNaN(latitude2 = _num(latitude2))) throw new TypeError('The _latLonDistance `latitude2` argument is not a valid latitude number value.');
+	if (isNaN(longitude2 = _num(longitude2))) throw new TypeError('The _latLonDistance `longitude2` argument is not a valid longitude number value.');
+	// const R = 6371e3; // Earth radius in meters
+	const R = 6.378e+6; // Earth radius in meters
+	const φ1 = latitude1 * Math.PI / 180; // φ, λ in radians
+	const φ2 = latitude2 * Math.PI / 180;
+	const Δφ = (latitude2 - latitude1) * Math.PI / 180;
+	const Δλ = (longitude2 - longitude1) * Math.PI / 180;
+	const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+						Math.cos(φ1) * Math.cos(φ2) *
+						Math.sin(Δλ / 2) * Math.sin(Δλ / 2); // square of half the chord length between the points using the Haversine formula.
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // angular distance in radians.
+	return R * c; // distance in meters
+};

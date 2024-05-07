@@ -191,3 +191,30 @@ export declare const _oct2dec: (octal: string) => number | undefined;
  * @returns `number|undefined` ~ parsed decimal integer | `undefined` when invalid
  */
 export declare const _base2dec: (value: string, base?: 2 | 8 | 16) => number | undefined;
+/**
+ * Convert degree to [radian](https://en.wikipedia.org/wiki/Radian)
+ * - `2π rad = 360°` ∴ `radian = degree * π/180`
+ *
+ * @param degrees - angle in degrees (i.e. 0 - 360°)
+ * @returns `number` - radian
+ */
+export declare const _deg2rad: (degrees: number) => number;
+/**
+ * Convert radian to [degree](https://en.wikipedia.org/wiki/Degree_(angle))
+ * - `2π rad = 360°` ∴ `radian = degree * π/180`
+ *
+ * @param radians - angle in radians (i.e. 0 - 360°)
+ * @returns `number` - degree
+ */
+export declare const _rad2deg: (radians: number) => number;
+/**
+ * Get distance in meters between two latitude and longitude coordinates
+ *
+ * @param latitude1 - first coordinate latitude `number`
+ * @param longitude1 - first coordinate longitude `number`
+ * @param latitude2 - second coordinate latitude `number`
+ * @param longitude2 - second coordinate longitude `number`
+ * @returns `number` `m` distance
+ * @throws `TypeError` when coorinate argument value is `NaN`
+ */
+export declare const _distance: (latitude1: number, longitude1: number, latitude2: number, longitude2: number) => number;
