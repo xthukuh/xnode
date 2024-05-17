@@ -218,3 +218,24 @@ export declare const _rad2deg: (radians: number) => number;
  * @throws `TypeError` when coorinate argument value is `NaN`
  */
 export declare const _distance: (latitude1: number, longitude1: number, latitude2: number, longitude2: number) => number;
+/**
+ * Get logarithm of value with custom base (i.e. `log_x * value = log * value/log * base`)
+ * - power of base in value
+ *
+ * @param base - log base
+ * @param value - log value
+ * @returns `number` approximatted float
+ */
+export declare const _logx: (base: number, value: number) => number;
+/**
+ * Get number in `k` (thousand)` to max `T` (trillion) SI Symbol value group
+ * - `'k'` Thousand
+ * - `'M'` Million
+ * - `'B'` Billion
+ * - `'T'` Trillion
+ *
+ * @param value - parse number
+ * @param places - decimal places (0 - 3)
+ * @returns `string` number text
+ */
+export declare const _numk: (value: number, places?: number) => string;

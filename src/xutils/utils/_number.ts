@@ -414,3 +414,45 @@ export const _distance = (latitude1: number, longitude1: number, latitude2: numb
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); // angular distance in radians.
 	return R * c; // distance in meters
 };
+
+/**
+ * Get logarithm of value with custom base (i.e. `log_x * value = log * value/log * base`)
+ * - power of base in value
+ * 
+ * @param base - log base
+ * @param value - log value
+ * @returns `number` approximatted float
+ */
+export const _logx = (base: number, value: number): number => {
+	if (isNaN(base = _num(base))) return NaN;
+	if (isNaN(value = _num(value))) return NaN;
+	return Math.log2(value) / Math.log2(base);
+};
+
+/**
+ * Get number in `k` (thousand)` to max `T` (trillion) SI Symbol value group
+ * - `'k'` Thousand
+ * - `'M'` Million
+ * - `'B'` Billion
+ * - `'T'` Trillion
+ * 
+ * @param value - parse number
+ * @param places - decimal places (0 - 3)
+ * @returns `string` number text
+ */
+export const _numk = (value: number, places: number = 1): string => {
+	if (isNaN(value = _num(value))) return NaN.toString();
+	if (!value) return '0';
+	places = _posInt(places, 0, 3, true) ?? 1;
+	const k: number = 1e3, units: string[] = ['', 'k', 'M', 'B', 'T'], max_pow: number = units.length - 1;
+	const n: string = value < 0 ? '-' : '', pow: number = Math.floor(_logx(k, value = Math.abs(value)));
+	const i: number = Math.min(pow, max_pow), unit: string = units[i];
+	let val: number = _round(value/(k**i), places);
+	let text: string = `${n}${val}${unit}`;
+	if (pow > max_pow){
+		const e: number = Math.floor(Math.log10(val));
+		val = _round(val/(10**e), places);
+		text = `${n}${val}e${e}${unit}`;
+	}
+	return text;
+};
