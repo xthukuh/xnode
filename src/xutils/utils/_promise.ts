@@ -15,24 +15,43 @@ export interface IPromiseResult<TResult> {
 
 /**
  * Parallel resolve list items `<T=any>[]`
- * - i.e. await _asyncAll<number, number>([1, 2], async (num) => num * 2) --> [{status: 'resolved', index: 0, value: 2}, {status: 'resolved', index: 1, value: 4}]
  * 
- * @param values - queue values
- * @param callback - queue resolve value callback ~ `(value:T,index:number,length:number)=>Promise<TResult=any>`
- * @param onProgress - queue on progress callback ~ `(percent:number,total:number,complete:number,failures:number)=>void`
+ * @example
+ * await _asyncAll<number, number>([1, 2], async (num) => num * 2) //[{status:'resolved',index:0,value:2},{status:'resolved',index:1,value:4}]
+ * await _asyncAll([() => Promise.resolve(1), 2], async (num) => num * 2) //[{status:'resolved',index:0,value:2},{status:'resolved',index:1,value:4}]
+ * await _asyncAll([async () => Promise.resolve(2), 4]) //[{status:'resolved',index:0,value:2},{status:'resolved',index:1,value:4}]
+ * 
+ * @param items - queue list _**(supports promise or callback values)**_
+ * @param callback - resolve queue item callback ~ supports parameters:
+ * - `item:T` ~ next queue item
+ * - `index:number` ~ next queue item index
+ * - `length:number` ~ queued items count
+ * - _**callback result is added to the `IPromiseResult[]` with same `index`**_
+ * 
+ * @param onProgress - queue on progress callback ~ supports parameters:
+ * - `percent:number` ~ queue processed items percentage (`integer 0 - 100`)
+ * - `total:number` ~ queued items count
+ * - `complete:number` ~ queue resolved items count
+ * - `failures:number` ~ queue rejected items count
+ * - _**returns void**_
+ * 
  * @returns `Promise<IPromiseResult<TResult>[]>`
  */
-export const _asyncAll = async<T = any, TResult = any>(values: T[], callback?: (value:T,index:number,length:number)=>Promise<TResult>, onProgress?: (percent:number,total:number,complete:number,failures:number)=>void): Promise<IPromiseResult<TResult>[]> => {
+export const _asyncAll = async<T = any, TResult = any>(
+	items: (T|Promise<T>|(()=>T|Promise<T>))[],
+	callback?: (item:T,index:number,length:number)=>Promise<TResult>,
+	onProgress?: (percent:number,total:number,complete:number,failures:number)=>void
+): Promise<IPromiseResult<TResult>[]> => {
 	return new Promise((resolve) => {
 		
 		//-- queue arguments
-		const _callback: undefined|((value:T,index:number,length:number)=>Promise<TResult>) = 'function' === typeof callback ? callback : undefined;
+		const _callback: undefined|((item:T,index:number,length:number)=>Promise<TResult>) = 'function' === typeof callback ? callback : undefined;
 		const _onProgress: undefined|((percent:number,total:number,complete:number,failures:number)=>void) = 'function' === typeof onProgress ? onProgress : undefined;
 
 		//-- queue promise
 		let complete = 0, failures = 0;
 		interface IQueueItem {index: number; value: T;}
-		const queue: IQueueItem[] = _arrayList(values).map((value, index) => ({index, value}));
+		const queue: IQueueItem[] = _arrayList(items).map((value, index) => ({index, value}));
 		const length = queue.length;
 		const results: IPromiseResult<TResult>[] = [];
 		const _resolve = (): void => void setTimeout(() => resolve(results), 0);
@@ -66,7 +85,12 @@ export const _asyncAll = async<T = any, TResult = any>(values: T[], callback?: (
 
 		//-- queue all pending promises
 		queue.forEach((next: IQueueItem): void => {
-			(async()=>_callback ? _callback(next.value, next.index, length) : next.value)()
+			(async () => {
+				let {value: item, index} = next;
+				if ('function' === typeof item) item = item();
+				if (item instanceof Promise) item = await item;
+				return _callback ? _callback(item, index, length) : item;
+			})()
 			.then((value: any) => {
 				results[next.index] = {status: 'resolved', index: next.index, value};
 				return _done();
