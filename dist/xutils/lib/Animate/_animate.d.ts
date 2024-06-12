@@ -1,62 +1,23 @@
-import { EasingFunction, EasingsKey } from './easings';
+import { TEasingFunction } from './easings';
+import { IAnimateOptions, IAnimation } from './_types';
 /**
- * Default animation easing
- */
-export declare const DEFAULT_EASING: EasingFunction;
-/**
- * Default animation duration
- */
-export declare const DEFAULT_DURATION: number;
-/**
- * Animate options interface
- */
-export interface IAnimateOptions {
-    update: (value: {
-        index: number;
-        delta: number;
-        pos: number;
-        time: number;
-    }) => void | false;
-    before?: (value: {
-        timestamp: number;
-        options: any;
-        then: number;
-    }) => void | false;
-    after?: (value: {
-        aborted: boolean;
-        abort_method: undefined | 'abort' | 'update' | 'begin' | 'timeout';
-        complete: boolean;
-        pause_duration: number;
-        total_duration: number;
-    }) => void;
-    easing: EasingsKey | EasingFunction;
-    duration: number;
-    delay?: number;
-    delayed?: boolean;
-    from?: number;
-    to?: number;
-    timeout?: number;
-    manual?: boolean;
-}
-/**
- * Animation control interface
- */
-export interface IAnimation {
-    _debug: boolean;
-    begun: boolean;
-    paused: boolean;
-    done: boolean;
-    play: (restart: boolean) => boolean;
-    pause: (toggle: boolean) => boolean;
-    resume: () => boolean;
-    restart: () => boolean;
-    cancel: () => boolean;
-    abort: () => boolean;
-}
-/**
- * Create timed animation
+ * The default easing function used in animations.
  *
- * @param options
- * @param _debug
+ * @constant {TEasingFunction}
+ */
+export declare const ANIMATE_DEFAULT_EASING: TEasingFunction;
+/**
+ * The default duration for animations, in milliseconds.
+ *
+ * @constant {number}
+ */
+export declare const ANIMATE_DEFAULT_DURATION: number;
+/**
+ * Animates an object based on the provided options.
+ *
+ * @param {IAnimateOptions} options - The options to configure the animation.
+ * @param {boolean} [_debug=false] - Enables debug mode if true.
+ * @returns {IAnimation} The animation control object.
+ * @throws {Error} Throws an error if the update callback is not defined in options.
  */
 export declare function _animate(this: any, options: IAnimateOptions, _debug?: boolean): IAnimation;

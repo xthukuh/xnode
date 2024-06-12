@@ -1,85 +1,44 @@
 import { _isFunc, _num, _posInt } from '../utils';
-import { EasingFunction, EasingsKey, Easings } from './easings';
+import { TEasingFunction, Easings } from './easings';
 import { requestAnimationFrame, cancelAnimationFrame } from './_polyfill';
+import { IAnimateOptions, IAnimation } from './_types';
 
 /**
- * Default animation easing
+ * The default easing function used in animations.
+ *
+ * @constant {TEasingFunction}
  */
-export const DEFAULT_EASING: EasingFunction = Easings.easeLinear;
+export const ANIMATE_DEFAULT_EASING: TEasingFunction = Easings.easeLinear;
 
 /**
- * Default animation duration
+ * The default duration for animations, in milliseconds.
+ *
+ * @constant {number}
  */
-export const DEFAULT_DURATION: number = 1000;
+export const ANIMATE_DEFAULT_DURATION: number = 1000;
 
 /**
- * Animate options interface
- */
-export interface IAnimateOptions {
-	update: (value: {
-		index: number;
-		delta: number;
-		pos: number;
-		time: number;
-	}) => void|false;
-	before?: (value: {
-		timestamp: number;
-		options: any;
-		then: number;
-	}) => void|false;
-	after?: (value: {
-		aborted: boolean;
-		abort_method: undefined|'abort'|'update'|'begin'|'timeout';
-		complete: boolean;
-		pause_duration: number;
-		total_duration: number;
-	}) => void;
-	easing: EasingsKey|EasingFunction;
-	duration: number;
-	delay?: number;
-	delayed?: boolean;
-	from?: number;
-	to?: number;
-	timeout?: number;
-	manual?: boolean;
-}
-
-/**
- * Animation control interface
- */
-export interface IAnimation {
-	_debug: boolean;
-	begun: boolean;
-	paused: boolean;
-	done: boolean;
-	play: (restart: boolean) => boolean;
-	pause: (toggle: boolean) => boolean;
-	resume: () => boolean;
-	restart: () => boolean;
-	cancel: () => boolean;
-	abort: () => boolean;
-}
-
-/**
- * Create timed animation
- * 
- * @param options
- * @param _debug
+ * Animates an object based on the provided options.
+ *
+ * @param {IAnimateOptions} options - The options to configure the animation.
+ * @param {boolean} [_debug=false] - Enables debug mode if true.
+ * @returns {IAnimation} The animation control object.
+ * @throws {Error} Throws an error if the update callback is not defined in options.
  */
 export function _animate(this: any, options: IAnimateOptions, _debug: boolean = false): IAnimation {
 	let {
 		update: _update,
 		before: _before,
 		after: _after,
-		easing: _easing = DEFAULT_EASING,
+		easing: _easing = ANIMATE_DEFAULT_EASING,
 		duration: _duration = 1000,
 		delay: _delay,
 		delayed: _delayed = false,
 		from: _from,
 		to: _to,
 		timeout: _timeout,
-		manual: _manual = false,
-	} = options;
+		autoplay: _autoplay = false,
+	} = Object(options);
 	const self = this;
 	const context = 'object' === typeof self && self ? self : null;
 	const update = _isFunc(_update) ? _update : undefined;
@@ -90,14 +49,14 @@ export function _animate(this: any, options: IAnimateOptions, _debug: boolean = 
 		console.error(err, options);
 		throw new Error(err);
 	}
-	const easing: EasingFunction = (()=>{
+	const easing: TEasingFunction = (()=>{
 		if ('string' === typeof _easing && Easings.hasOwnProperty(_easing)) _easing = Easings[_easing];
-		return 'function' === typeof _easing ? _easing : DEFAULT_EASING;
+		return 'function' === typeof _easing ? _easing : ANIMATE_DEFAULT_EASING;
 	})();
-	const duration = _posInt(_duration, 0) ?? DEFAULT_DURATION;
+	const duration = _posInt(_duration, 0) ?? ANIMATE_DEFAULT_DURATION;
 	const delay = _posInt(_delay, 0) ?? 0;
 	const delayed = Boolean(_delayed);
-	const manual = Boolean(_manual);
+	const autoplay = Boolean(_autoplay);
 	const timeout = _posInt(_timeout, 0) ?? 0;
 	const from = _num(_from, 0);
 	const to = _num(_to, 0);
@@ -118,13 +77,15 @@ export function _animate(this: any, options: IAnimateOptions, _debug: boolean = 
 	let then: number = Date.now();
 
 	//reset
-	const reset = (): void => {
+	const reset = (): boolean => {
 		if (t) clearTimeout(t);
 		if (id) cancelAnimationFrame(id);
 		id = t = start = is_done = is_paused = prev = undefined;
 		d = p = et = pt = elapsed = 0;
 		index = -1;
 		then = new Date().getTime();
+		if (_debug) console.debug('[_animate] reset.');
+		return !is_done;
 	};
 
 	//frame
@@ -245,16 +206,9 @@ export function _animate(this: any, options: IAnimateOptions, _debug: boolean = 
 	
 	//restart
 	const restart = (): boolean => play(true);
-	
-	//cancel
-	const cancel = (): boolean => {
-		reset();
-		if (_debug) console.debug('[_animate] cancelled.');
-		return !is_done;
-	};
 
 	//autoplay
-	if (!manual) play();
+	if (autoplay) play();
 	
 	//result - animation
 	return {
@@ -274,7 +228,7 @@ export function _animate(this: any, options: IAnimateOptions, _debug: boolean = 
 		pause,
 		resume,
 		restart,
-		cancel,
+		reset,
 		abort,
 	};
 }

@@ -1,5 +1,11 @@
 /**
- * Export polyfill - window.requestAnimationFrame, window.cancelAnimationFrame
+ * Export polyfill for `window.requestAnimationFrame` and `window.cancelAnimationFrame`.
+ * 
+ * This polyfill provides compatibility for browsers that do not support `requestAnimationFrame`
+ * and `cancelAnimationFrame` by default. It checks for vendor-prefixed implementations and
+ * falls back to a timeout-based solution if necessary.
+ * 
+ * @constant {[(callback: (time: number) => void) => number, (handle: number) => void]}
  */
 export const [requestAnimationFrame, cancelAnimationFrame] = (() => {
 	let _requestAnimationFrame: any = undefined;

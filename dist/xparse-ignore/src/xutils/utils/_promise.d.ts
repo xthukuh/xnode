@@ -76,60 +76,6 @@ export declare const _sleep: (timeout: number) => Promise<number>;
  */
 export declare function _resolve(this: any, promise: (() => Promise<any> | any) | any, _new?: boolean): Promise<any>;
 /**
- * Pending promise interface
- */
-export interface IPendingPromise {
-    /**
-     * - unique promise key/name/ID
-     */
-    key: string;
-    /**
-     * - promise instance
-     */
-    promise: Promise<any>;
-    /**
-     * - promise resolved/rejected/aborted
-     */
-    done: boolean;
-    /**
-     * - promise resolved (successful) ~ `false` when pending or rejected
-     */
-    resolved: boolean;
-    /**
-     * - promise aborted
-     */
-    aborted: boolean;
-    /**
-     * - start time ~ pending promise create time (milliseconds i.e. `Date.now()`)
-     */
-    time_start: number;
-    /**
-     * - stop time ~ time resolved/rejected/aborted (milliseconds i.e. `Date.now()`)
-     */
-    time_stop?: number;
-    /**
-     * - stop time ~ time resolved/rejected (milliseconds i.e. `Date.now()`)
-     */
-    time_end?: number;
-    /**
-     * - previous chain promise (resolved)
-     */
-    previous?: IPendingPromise;
-    /**
-     * - resolve next chain promise
-     *
-     * @param previous - previous `IPendingPromise`
-     * @returns `Promise<any>`
-     */
-    next?: (previous: IPendingPromise) => Promise<any>;
-    /**
-     * - cancel pending promise
-     *
-     * @returns `void`
-     */
-    abort: () => void;
-}
-/**
  * @class pending promise abort error
  */
 export declare class PendingAbortError extends Error {
