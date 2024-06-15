@@ -90,7 +90,7 @@ export declare const _sqlEscape: (value: any) => string | number | boolean | nul
  * Regex string trim characters
  *
  * @param value  Trim value
- * @param chars  Strip characters [default: `' \n\r\t\f\v\x00'`] - use `'{default}'` to include defaults (i.e `'-{defaults}'` == `'- \n\r\t\f\v\x00'`)
+ * @param chars  Strip characters [default: `' \r\n\t\f\v\x00\u200B\u200C\u200D\u200E\u200F\uFEFF'` (template `'{default}'`)]
  * @param rl  Trim mode (`''` => (default) trim right & left, `'r'|'right'` => trim right, `'l'|'left'` => trim left)
  * @returns trimmed `string`
  */

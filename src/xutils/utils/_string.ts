@@ -99,7 +99,7 @@ export const _str = (value: any, trim: boolean = false, stringify: boolean = fal
 		}
 		else value = _string(value);
 	}
-	return trim ? value.trim() : value;
+	return trim ? _trim(value) : value;
 };
 
 /**
@@ -162,13 +162,13 @@ export const _sqlEscape = (value: any): string|number|boolean|null => {
  * Regex string trim characters
  * 
  * @param value  Trim value
- * @param chars  Strip characters [default: `' \n\r\t\f\v\x00'`] - use `'{default}'` to include defaults (i.e `'-{defaults}'` == `'- \n\r\t\f\v\x00'`)
+ * @param chars  Strip characters [default: `' \r\n\t\f\v\x00\u200B\u200C\u200D\u200E\u200F\uFEFF'` (template `'{default}'`)]
  * @param rl  Trim mode (`''` => (default) trim right & left, `'r'|'right'` => trim right, `'l'|'left'` => trim left)
  * @returns trimmed `string`
  */
-export const _trim = (value: any, chars: string = ' \r\n\t\f\v\x00', rl: ''|'r'|'l'|'right'|'left' = ''): string => {
+export const _trim = (value: any, chars: string = ' \r\n\t\f\v\x00\u200B\u200C\u200D\u200E\u200F\uFEFF', rl: ''|'r'|'l'|'right'|'left' = ''): string => {
 	if (!(value = _str(value)) || !((chars = _str(chars)))) return value;
-	chars = chars.replace(/\{default\}/, ' \r\n\t\f\v\x00');
+	chars = chars.replace(/\{default\}/, ' \r\n\t\f\v\x00\u200B\u200C\u200D\u200E\u200F\uFEFF');
 	let trim_chars: string[] = [], d1 = 0, d2 = 0;
 	for (const v of [...new Set([...chars])]){
 		if (!v) continue;
@@ -184,7 +184,8 @@ export const _trim = (value: any, chars: string = ' \r\n\t\f\v\x00', rl: ''|'r'|
 	}
 	if (d2) trim_chars.unshift('_');
 	if (d1) trim_chars.unshift('-');
-	let p = `[${_regEscape(trim_chars.join(''))}]*`, pattern = `^${p}|${p}$`;
+	const p = `[${_regEscape(trim_chars.join(''))}]+`;
+	let pattern = `^${p}|${p}$`;
 	if (['l', 'left'].includes(rl)) pattern = `^${p}`;
 	else if (['r', 'right'].includes(rl)) pattern = `${p}$`;
 	return value.replace(new RegExp(pattern, 'gs'), '');
