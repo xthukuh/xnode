@@ -1,5 +1,5 @@
 import { _lsDir, _pathinfo, _readSync, _realpath } from './xfs';
-import { _regEscape, _str, _values } from './xutils';
+import { _regEscape, _str, _values } from 'xtutils';
 import { _dirPath, _isWin, _normSep, _print } from './__utils';
 
 //pattern ignore interface
@@ -38,7 +38,6 @@ const KNOWN_IGNORE_DIRS: string[] = [
 	'.github',
 	'node_modules',
 	'mobile_sdk',
-	'xutils',
 ];
 const KNOWN_IGNORE_FILES: string[] = [
 	'yarn.lock',

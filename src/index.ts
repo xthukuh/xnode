@@ -1,4 +1,4 @@
-import { Term, _asyncAll, _asyncQueue, _jsonStringify, _rand, _round, _sleep, _str } from './xutils';
+import { Term, _asyncAll, _asyncQueue, _jsonStringify, _rand, _round, _sleep, _str } from 'xtutils';
 import { _processArgs } from './xfs';
 import { _parseIgnore } from './_parse_ignore';
 import { _print } from './__utils';

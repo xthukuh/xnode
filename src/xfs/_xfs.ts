@@ -2,7 +2,7 @@ import * as Fs from 'fs';
 import * as Path from 'path';
 import * as Readline from 'readline';
 import * as Crypto from 'crypto';
-import { Term, _basename, _errorText, _filepath, _getAllProperties, _jsonParse, _posInt, _round, _str } from '../xutils';
+import { Term, _basename, _errorText, _filepath, _getAllProperties, _jsonParse, _posInt, _round, _str } from 'xtutils';
 
 
 /**

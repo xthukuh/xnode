@@ -1,5 +1,5 @@
 import { _exists, _pathinfo, _realpath } from './xfs';
-import { Term, _arrayList, _bool, _commas, _filepath, _posInt, _round, _str } from './xutils';
+import { Term, _arrayList, _bool, _commas, _filepath, _posInt, _round, _str } from 'xtutils';
 
 //Print console log
 export const _print = (text: string, _error: boolean = false) => {

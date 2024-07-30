@@ -1,5 +1,5 @@
 import { _processArgs } from './xfs';
-import { Term, _arrayList, _wrapLines } from './xutils';
+import { Term, _arrayList, _wrapLines } from 'xtutils';
 
 /**
  * Indent SPACE

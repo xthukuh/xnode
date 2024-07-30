@@ -18,7 +18,7 @@ import {
 	_filepath,
 	_round,
 	_str,
-} from './xutils';
+} from 'xtutils';
 
 /**
  * Backup copy directories
