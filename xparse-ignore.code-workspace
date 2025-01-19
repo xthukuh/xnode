@@ -7,6 +7,13 @@
 	"settings": {
 		"editor.tabSize": 2,
 		"editor.detectIndentation": false,
-		"editor.insertSpaces": false
+		"editor.insertSpaces": false,
+		"workbench.colorCustomizations": {
+			// "activityBar.background": "#3E1849",
+			"titleBar.activeBackground": "#572266",
+			"titleBar.activeForeground": "#FEFCFE",
+			"titleBar.inactiveBackground": "#3E1849",
+			"titleBar.inactiveForeground": "#FEFCFE",
+		}
 	}
 }
